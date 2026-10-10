@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self';
+                   script-src 'self' 'unsafe-eval' 'unsafe-inline';
+                   style-src 'self' 'unsafe-inline';
+                   img-src 'self' data: blob:;
+                   font-src 'self' data:;
+                   frame-src https://www.youtube.com https://www.youtube-nocookie.com;
+                   connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:* http://localhost:* ws://localhost:* https://api.github.com;
+                   media-src http://127.0.0.1:*;
+                   object-src 'none';
+                   base-uri 'self';" />
+    <script src="./startup-guard.js"></script>
+    <script src="./diagnostics-boot.js"></script>
+    <script src="./boot-theme.js"></script>
+    <title>jot</title>
+    <style>
+      :root {
+        --boot-bg: #eceae5;
+        --boot-face: #ffffff;
+        --boot-empty: #e3e1db;
+        --boot-skeleton: rgba(20, 20, 22, 0.07);
+      }
+
+      :root[data-theme="dark"] {
+        --boot-bg: #161618;
+        --boot-face: #212124;
+        --boot-empty: #26262a;
+        --boot-skeleton: rgba(255, 255, 255, 0.06);
+      }
+
+      html, body, #root {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: var(--boot-bg);
+      }
+
+      body {
+        background: var(--boot-bg);
+        font-family: "Figtree", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .boot-shell {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100vw;
+        box-sizing: border-box;
+      }
+
+      .boot-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 32px;
+      }
+
+      .boot-bar {
+        height: 18px;
+        border-radius: 9px;
+        background: var(--boot-skeleton);
+      }
+
+      .boot-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 52px;
+        padding-bottom: 72px;
+      }
+
+      .boot-dials {
+        display: flex;
+        gap: 44px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .boot-dial {
+        width: 184px;
+        height: 184px;
+        border-radius: 50%;
+        background: var(--boot-empty);
+      }
+
+      .boot-pill {
+        width: 240px;
+        height: 56px;
+        border-radius: 28px;
+        background: var(--boot-skeleton);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="boot-shell" aria-hidden="true">
+        <div class="boot-topbar">
+          <div class="boot-bar" style="width: 130px"></div>
+          <div class="boot-bar" style="width: 220px"></div>
+        </div>
+        <main class="boot-main">
+          <div class="boot-bar" style="width: 300px; height: 44px; border-radius: 14px"></div>
+          <div class="boot-dials">
+            <div class="boot-dial"></div>
+            <div class="boot-dial"></div>
+            <div class="boot-dial"></div>
+          </div>
+          <div class="boot-pill"></div>
+        </main>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

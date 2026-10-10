@@ -1,0 +1,17 @@
+#
+# Locked dependencies for reproducible builds (GitHub Actions + local builds).
+# Keep this file pinned; update intentionally when needed.
+#
+
+beautifulsoup4==4.14.3
+certifi==2026.2.25
+google-genai==1.73.1
+imageio-ffmpeg==0.6.0
+markdown==3.10.2
+keyring==25.6.0
+pywebview==5.4
+plyer==2.1.0
+nh3==0.2.21
+pyinstaller==6.19.0
+pypdf==6.20.0
+python-pptx==1.0.2

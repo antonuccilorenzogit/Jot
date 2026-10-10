@@ -1,0 +1,64 @@
+[tool.ruff]
+target-version = "py311"
+extend-exclude = [
+  ".venv",
+  "build",
+  "dist",
+  "test_dist",
+  "webui/dist",
+  "webui/node_modules",
+]
+
+[tool.ruff.lint]
+select = [
+    "E9",   # syntax errors
+    "F63",  # invalid literals / assert
+    "F7",   # statement errors (return outside function, etc.)
+    "F82",  # undefined names
+    "E711", # comparison to None via == / !=
+    "E712", # comparison to True/False via == / !=
+    "E721", # type comparison — prefer isinstance()
+    "E722", # bare except:
+    "F841", # local variable assigned but never used
+    "C90",  # McCabe cyclomatic complexity
+    "I",    # isort — import ordering
+    "B",    # flake8-bugbear — mutable defaults, assert-tuple, etc.
+    "UP",   # pyupgrade — modernise to py311 idioms
+    "RUF",  # ruff-specific — unused noqa, ambiguous unicode, etc.
+]
+ignore = [
+    "B904", # raise-from-err inside except — opinionated, many existing sites
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 20
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pyright]
+pythonVersion = "3.11"
+pythonPlatform = "All"
+typeCheckingMode = "basic"
+include = ["jot", "scripts", "tests"]
+exclude = [".venv", "build", "dist", "test_dist", "webui/dist", "webui/node_modules"]
+reportMissingModuleSource = "none"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["jot"]
+parallel = true
+omit = [
+    "*/__init__.py",
+    "jot/app.py",
+    "jot/webview_entry.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 85

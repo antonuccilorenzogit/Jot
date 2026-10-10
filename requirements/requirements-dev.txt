@@ -1,0 +1,11 @@
+ruff==0.16.6
+pre-commit==4.6.2
+pyright==1.1.414
+pytest==8.3.5
+pytest-cov==6.1.0
+pytest-xdist==3.8.0
+pip-audit==2.10.1
+fastapi>=0.141.1
+uvicorn[standard]>=0.53.0
+python-multipart>=0.0.32
+httpx>=0.28.1

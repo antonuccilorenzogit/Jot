@@ -1,0 +1,108 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.ruff_cache/
+.pytest_cache/
+
+# Local config (API key saved in user home dir)
+config.json
+.jot_config.json
+.jot_config.json
+.jot_sessions/
+
+# Audio/Video processing temp
+jot_temp_*.mp3
+*_Sbobina.html
+*_Sbobina.md
+Sbobina_Definitiva.html
+Sbobina_Definitiva.md
+pdf_output.txt
+
+# PyInstaller build artifacts
+*.spec
+build/
+dist/
+build_new/
+test_dist/
+
+# Local dev artifacts
+_smoke/
+Thumbs.db
+.DS_Store
+*.log
+
+# Coverage and type-check output artifacts
+.coverage
+coverage.xml
+coverage-python.xml
+htmlcov/
+webui/coverage/
+pyright_clean.txt
+pyright_errors.txt
+pyright_full.txt
+
+# Media files
+*.mp3
+*.mp4
+*.m4a
+*.wav
+*.avi
+*.mov
+*.mkv
+*.pdf
+
+# Virtual envs
+.venv/
+venv/
+env/
+.env
+
+# WebUI artifacts
+node_modules/
+webui/dist/
+webui/.env.local
+
+# IDE-specific config
+.windsurf/
+.vscode/
+DESIGN.md
+
+# Additional IDEs, editors and system files
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*~
+.history/
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# NPM debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Agent scratchpads and temporary workspace files
+.agents/
+progress.md
+ORIGINAL_REQUEST.md
+learning_proposal.md
+
+# Developer local scratch tools
+tools/resize_icon.py
+
+# Temporary changelog generated during build/release
+/release_changelog.md
+
+# Generated quick-guide document
+/docs/Guida_rapida_jot.docx
+/docs/Guida_rapida_jot.pdf
+
+# Browser E2E artifacts
+/test-results/
+/playwright-report/
