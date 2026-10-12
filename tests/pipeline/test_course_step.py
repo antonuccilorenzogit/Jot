@@ -6,6 +6,7 @@ import os
 import tempfile
 import unittest
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from jot.pipeline.course_step import SUMMARY_MD, run_course_step
@@ -31,9 +32,12 @@ class CourseStepTests(unittest.TestCase):
                 os.path.join(session_dir, SUMMARY_MD), "w", encoding="utf-8"
             ) as f:
                 f.write("## Concetti chiave\n- Il contratto e' un accordo.\n" * 10)
-            session = {"course": "Diritto privato", "lesson_date": "2026-10-12"}
+            session: dict[str, Any] = {
+                "course": "Diritto privato",
+                "lesson_date": "2026-10-12",
+            }
             client = MagicMock()
-            kwargs = dict(
+            kwargs: dict[str, Any] = dict(
                 client=client,
                 session_ctx=SimpleNamespace(session_dir=session_dir),
                 session=session,
@@ -48,7 +52,7 @@ class CourseStepTests(unittest.TestCase):
             )
             with patch.dict(os.environ, {"JOT_COURSE_ROOT": os.path.join(tmp, "jot")}):
                 run_course_step(**kwargs)
-                first = dict(session["course_output"])
+                first: dict[str, Any] = dict(session["course_output"])
                 with open(
                     os.path.join(revised, "rev_001.md"), "w", encoding="utf-8"
                 ) as f:
