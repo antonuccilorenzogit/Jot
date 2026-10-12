@@ -41,6 +41,12 @@ def _truncate_notification_text(text: str, max_units: int) -> str:
     return text[:end] + "…"
 
 
+def _course_root() -> str:
+    from jot.services.course_outputs import course_root
+
+    return course_root(config_service.load_config())
+
+
 class SystemControllerMixin:
     """Mixin providing system integration IPC methods."""
 
@@ -279,6 +285,7 @@ class SystemControllerMixin:
                     config_service.get_desktop_dir()
                 ),  # Desktop / OneDrive Desktop
                 os.path.realpath(self._get_session_root()),  # Session storage
+                os.path.realpath(_course_root()),  # Course folders (Lezioni/Sintesi)
             ]
             path_is_allowed = any(
                 _path_under_root(real_path, root) for root in allowed_roots

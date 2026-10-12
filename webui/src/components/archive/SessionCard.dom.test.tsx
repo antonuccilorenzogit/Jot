@@ -140,6 +140,52 @@ describe('SessionCard components selection styling', () => {
       expect(screen.queryByText('Rimuovi collegamento audio')).toBeNull();
     });
 
+    it('opens the sintesi and the course folder', () => {
+      const onPreview = vi.fn();
+      const onOpenFile = vi.fn();
+      render(
+        <DraggableSessionCard
+          session={{
+            ...mockSession,
+            summary_html: '/sessions/s1/sintesi.html',
+            course_folder: '/Documenti/jot/Istologia',
+            lesson_date: '2026-10-12',
+          }}
+          allFolders={[]}
+          onAssignToFolder={vi.fn()}
+          onRemoveFromFolder={vi.fn()}
+          onPreview={onPreview}
+          onOpenFile={onOpenFile}
+          onDeleteSession={vi.fn()}
+        />,
+      );
+      fireEvent.click(screen.getByLabelText('Altre opzioni'));
+      fireEvent.click(screen.getByText('Apri sintesi'));
+      expect(onPreview).toHaveBeenCalledWith(
+        '/sessions/s1/sintesi.html', 'S 12-10-2026', '/audio/s1.m4a', undefined, '/sessions/s1',
+      );
+      fireEvent.click(screen.getByLabelText('Altre opzioni'));
+      fireEvent.click(screen.getByText('Apri cartella del corso'));
+      expect(onOpenFile).toHaveBeenCalledWith('/Documenti/jot/Istologia');
+    });
+
+    it('hides the sintesi entries for older lessons', () => {
+      render(
+        <DraggableSessionCard
+          session={mockSession}
+          allFolders={[]}
+          onAssignToFolder={vi.fn()}
+          onRemoveFromFolder={vi.fn()}
+          onPreview={vi.fn()}
+          onOpenFile={vi.fn()}
+          onDeleteSession={vi.fn()}
+        />,
+      );
+      fireEvent.click(screen.getByLabelText('Altre opzioni'));
+      expect(screen.queryByText('Apri sintesi')).toBeNull();
+      expect(screen.queryByText('Apri cartella del corso')).toBeNull();
+    });
+
     it('groups folders under Raccolta submenu and assigns to folder on click', () => {
       const onAssignToFolder = vi.fn();
       render(

@@ -197,6 +197,73 @@ describe('useQueueProcessing', () => {
     ]);
   });
 
+  it('sends the second recording and the lesson date', async () => {
+    const startProcessingMock = vi.fn().mockResolvedValue({ ok: true });
+    window.pywebview = {
+      api: {
+        check_path_exists: vi.fn().mockResolvedValue({ exists: true }),
+        start_processing: startProcessingMock,
+      } as unknown as PywebviewApi,
+    };
+    const files: FileItem[] = [{
+      id: 'lesson::/a.mp3::::::::+/b.mp3', path: '/a.mp3', name: 'Diritto', size: 3, duration: 20,
+      status: 'queued', progress: 0, phase: 0, course: 'Diritto privato', lessonDate: '2026-10-12',
+      lesson: { audioParts: [{ path: '/b.mp3', name: 'b.mp3', size: 2, duration: 10 }] },
+    }];
+    const { result } = renderHook(() =>
+      useQueueProcessing({
+        filesRef: { current: files },
+        appStateRef: { current: 'idle' as const },
+        apiKey: 'AIzaSyTestKey_123456789012345678901',
+        preferredModel: 'gemini-2.5-flash',
+        fallbackModels: [],
+        dispatch: vi.fn(),
+        appendConsole: vi.fn(),
+        setConfirmAction: vi.fn(),
+        refreshArchiveSessions: vi.fn().mockResolvedValue(undefined),
+      }),
+    );
+    await act(async () => {
+      await result.current.startProcessing();
+    });
+    expect(startProcessingMock.mock.calls[0][0]).toEqual([
+      expect.objectContaining({ audio_parts: ['/b.mp3'], lesson_date: '2026-10-12', course: 'Diritto privato' }),
+    ]);
+  });
+
+  it('stops when the second recording was moved', async () => {
+    const startProcessingMock = vi.fn().mockResolvedValue({ ok: true });
+    const appendConsole = vi.fn();
+    window.pywebview = {
+      api: {
+        check_path_exists: vi.fn(async (path: string) => ({ exists: path !== '/b.mp3' })),
+        start_processing: startProcessingMock,
+      } as unknown as PywebviewApi,
+    };
+    const files: FileItem[] = [{
+      id: 'lesson::/a.mp3::::::::+/b.mp3', path: '/a.mp3', name: 'Diritto', size: 3, duration: 20,
+      status: 'queued', progress: 0, phase: 0,
+      lesson: { audioParts: [{ path: '/b.mp3', name: 'b.mp3', size: 2, duration: 10 }] },
+    }];
+    const { result } = renderHook(() =>
+      useQueueProcessing({
+        filesRef: { current: files },
+        appStateRef: { current: 'idle' as const },
+        apiKey: 'AIzaSyTestKey_123456789012345678901',
+        preferredModel: 'gemini-2.5-flash',
+        fallbackModels: [],
+        dispatch: vi.fn(),
+        appendConsole,
+        setConfirmAction: vi.fn(),
+        refreshArchiveSessions: vi.fn().mockResolvedValue(undefined),
+      }),
+    );
+    await act(async () => {
+      await result.current.startProcessing();
+    });
+    expect(appendConsole).toHaveBeenCalledWith(expect.stringContaining('Seconda parte'));
+  });
+
   it('increments and decrements batchTotal dynamically when processing', () => {
     const files: FileItem[] = [
       { id: '1', path: '/test/audio1.mp3', name: 'audio1.mp3', size: 1000, duration: 10, status: 'processing', progress: 0, phase: 1 },

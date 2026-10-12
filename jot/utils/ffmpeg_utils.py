@@ -270,3 +270,44 @@ def cut_chunk_to_mp3(
     if stderr:
         stderr = "\n".join(stderr.splitlines()[-12:])
     return False, stderr or "cut_failed"
+
+
+def concat_audio_to_mp3(
+    *,
+    input_paths: list[str],
+    output_path: str,
+    ffmpeg_exe: str | None = None,
+    stop_event=None,
+) -> tuple[bool, str | None]:
+    """Join several recordings into one mono MP3 (good for listening back)."""
+    exe = ffmpeg_exe or get_ffmpeg_exe()
+    cmd = [exe, "-hide_banner", "-loglevel", "error", "-y"]
+    for path in input_paths:
+        cmd += ["-i", path]
+    streams = "".join(f"[{i}:a:0]" for i in range(len(input_paths)))
+    cmd += [
+        "-filter_complex",
+        f"{streams}concat=n={len(input_paths)}:v=0:a=1[out]",
+        "-map",
+        "[out]",
+        "-ac",
+        "1",
+        "-ar",
+        "22050",
+        "-b:a",
+        "64k",
+        "-f",
+        "mp3",
+        output_path,
+    ]
+    rc, _out, err, was_cancelled = _run_cancellable(cmd, stop_event=stop_event)
+    if was_cancelled:
+        try:
+            if os.path.exists(output_path):
+                os.remove(output_path)
+        except Exception:
+            pass
+        return False, "cancelled"
+    if rc == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 1024:
+        return True, None
+    return False, (err or "").strip()[-400:] or f"ffmpeg exit {rc}"

@@ -1,7 +1,7 @@
 import { useState, type MouseEvent } from 'react';
 import {
   AlertTriangle, Check, ChevronLeft, ChevronRight, Download, ExternalLink,
-  Eye, FileText, Folder, FolderOpen, GraduationCap, RotateCcw, Trash2, X,
+  Eye, FileText, Folder, FolderOpen, GraduationCap, NotebookPen, RotateCcw, Trash2, X,
 } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -11,6 +11,33 @@ import { formatRelativeTime, shortModelName } from '../../utils';
 import { KebabMenu, type KebabMenuItem } from '../KebabMenu';
 import { FolderIndicatorChip } from '../FolderChip';
 import { type ArchivePageProps, getOpenedAtMs, DEFAULT_FOLDER_COLOR } from './types';
+
+/** "Apri sintesi" and "Apri cartella del corso" when the lesson has them. */
+function courseOutputItems(
+  session: ArchiveSession,
+  onPreview: ArchivePageProps['onPreview'],
+  onOpenFile: ArchivePageProps['onOpenFile'],
+): KebabMenuItem[] {
+  const items: KebabMenuItem[] = [];
+  if (session.summary_html) {
+    const summaryHtml = session.summary_html;
+    const day = session.lesson_date ? ` ${session.lesson_date.split('-').reverse().join('-')}` : '';
+    items.push({
+      label: 'Apri sintesi',
+      icon: <NotebookPen className="w-3.5 h-3.5" />,
+      onClick: () => onPreview(summaryHtml, `S${day}`, session.input_path, undefined, session.session_dir),
+    });
+  }
+  if (session.course_folder) {
+    const folder = session.course_folder;
+    items.push({
+      label: 'Apri cartella del corso',
+      icon: <GraduationCap className="w-3.5 h-3.5" />,
+      onClick: () => onOpenFile(folder),
+    });
+  }
+  return items;
+}
 
 export interface DraggableSessionCardProps {
   session: ArchiveSession;
@@ -103,6 +130,7 @@ export function DraggableSessionCard({
       icon: <ExternalLink className="w-3.5 h-3.5" />,
       onClick: () => onOpenFile(session.html_path),
     },
+    ...courseOutputItems(session, onPreview, onOpenFile),
     ...(onShareSession ? [{
       label: 'Esporta Sbobina...',
       icon: <Download className="w-3.5 h-3.5" />,
@@ -355,6 +383,7 @@ export function SortableSessionCard({
       icon: <ExternalLink className="w-3.5 h-3.5" />,
       onClick: () => onOpenFile(session.html_path),
     },
+    ...courseOutputItems(session, onPreview, onOpenFile),
     ...(onShareSession ? [{
       label: 'Esporta Sbobina...',
       icon: <Download className="w-3.5 h-3.5" />,

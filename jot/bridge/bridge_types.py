@@ -29,6 +29,10 @@ class BridgeFileItem(TypedDict):
     slides_path: NotRequired[str | None]
     title: NotRequired[str | None]
     course: NotRequired[str | None]
+    # Further recordings of the same lesson (merged after `path`)
+    audio_parts: NotRequired[list[str]]
+    # YYYY-MM-DD, names the files in the course folder
+    lesson_date: NotRequired[str | None]
 
 
 class RetryStatePayload(TypedDict, total=False):

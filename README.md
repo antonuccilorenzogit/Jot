@@ -28,7 +28,17 @@
   - audio + libro: in revisione il libro chiarisce i passaggi difficili, con una o due frasi nel punto giusto;
   - solo slide (+ libro): appunti completi dalle slide.
 
-  Slide e libro **non aggiungono richieste**: una lezione di 2 ore e mezza costa circa 15 richieste su 20 gratuite al giorno.
+  Lezione registrata in due parti? Aggiungi la **seconda parte** (fino a quattro file) e jot le unisce in un'unica sbobina.
+
+  Slide e libro **non aggiungono richieste**: una lezione di 2 ore e mezza costa circa 16 richieste su 20 gratuite al giorno, sintesi compresa.
+- **Sintesi per il ripasso.** Insieme a ogni lezione jot scrive una sintesi di una pagina: concetti chiave, definizioni, formule, un esempio tipo e tre domande di autoverifica con le risposte in fondo. Le parti poco chiare sono segnalate tra [ ] invece di essere inventate.
+- **Cartella del corso.** Lezione e sintesi vengono salvate in PDF in `Documenti/jot/<corso>`:
+  ```
+  Documenti/jot/Diritto privato/
+  ├── Lezioni/   L 12-10-2026.pdf, L 14-10-2026.pdf …
+  └── Sintesi/   S 12-10-2026.pdf, S 14-10-2026.pdf …
+  ```
+  La data è quella della lezione (la scegli prima di avviare). Le lezioni senza corso vanno in `Senza corso`.
 - **Pensa da solo ai dettagli.** Nome della lezione e capitolo del libro vengono suggeriti dai file; prima di partire vedi quante richieste servono e quante ne restano oggi; se la quota finisce, riparte da sola dopo il reset; nelle ore di punta propone di partire più tardi.
 - **Ti fa vedere cosa succede.** Un quadrante mostra il blocco in corso e una frase spiega il passaggio: «Ascolto i minuti 43–58 e scrivo gli appunti».
 - **Appunti da studiare.** Editor con audio sincronizzato: ogni sezione ha il minuto della lezione, un clic e l'audio salta lì. Formule vere (LaTeX), **Esporta PDF** pulito, copia per Google Docs e Word.

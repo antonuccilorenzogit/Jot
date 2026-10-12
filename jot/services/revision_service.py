@@ -949,6 +949,26 @@ def execute_failed_blocks_retry_workflow(
     session["outputs"]["html"] = html_path
     session.setdefault("settings", {})
     session["settings"]["effective_model"] = model_state.current
+    if isinstance(session.get("course_output"), dict) and not cancelled:
+        # refresh Lezioni/L <data>; the sintesi is reused from sintesi.md
+        from types import SimpleNamespace
+
+        from jot.pipeline.course_step import run_course_step
+
+        client = run_course_step(
+            client=client,
+            session_ctx=SimpleNamespace(session_dir=session_dir),
+            session=session,
+            save_session=_save_session,
+            model_name=primary_model,
+            model_state=model_state,
+            phase2_revised_dir=phase2_revised_dir,
+            revised_text="",
+            runtime=runtime,
+            fallback_keys=fallback_keys,
+            request_fallback_key=_request_fallback_key,
+            on_model_switched=_on_model_switched,
+        )
     mark_html_exported(session)
     _save_session()
     invalidate_session_storage_cache()

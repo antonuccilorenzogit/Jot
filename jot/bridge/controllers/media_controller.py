@@ -220,6 +220,12 @@ class MediaControllerMixin:
             error = self._validate_lesson_documents(file_info)
             if error:
                 return error
+            for part in file_info.get("audio_parts") or []:
+                ok, error, _part_duration = self._validate_media_path(
+                    str(part or ""), require_duration=True
+                )
+                if not ok:
+                    return error
             file_info["duration"] = float(probed_duration or 0)
         return None
 

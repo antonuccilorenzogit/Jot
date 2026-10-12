@@ -25,6 +25,7 @@ from jot.core.session_store import (
     _update_session,
     get_session_root,
 )
+from jot.pipeline.course_step import run_course_step
 from jot.pipeline.pipeline import (
     _export_html_and_finish,
     _handle_circuit_breaker_paused,
@@ -101,6 +102,9 @@ def _apply_notes_metadata(session: dict, meta: dict) -> None:
     merged = dict(meta)
     title = str(merged.pop("title", "") or "").strip()
     course = str(merged.pop("course", "") or "").strip()
+    lesson_date = str(merged.pop("lesson_date", "") or "").strip()
+    if lesson_date:
+        session["lesson_date"] = lesson_date[:10]
     if title:
         session["title"] = title
         session["custom_title"] = title
@@ -398,6 +402,7 @@ def _esegui_appunti_impl(
     book_mode: str | None = None,
     title: str | None = None,
     course: str | None = None,
+    lesson_date: str | None = None,
 ):
     runtime = PipelineRuntime(app_instance)
     runtime.reset_temp_files()
@@ -458,7 +463,9 @@ def _esegui_appunti_impl(
             selected_book_pages,
             book_mode,
         )
-        notes_meta.update(title=title or "", course=course or "")
+        notes_meta.update(
+            title=title or "", course=course or "", lesson_date=lesson_date or ""
+        )
         _apply_notes_metadata(session, notes_meta)
         session_ctx.save()
 
@@ -572,6 +579,22 @@ def _esegui_appunti_impl(
         if should_exit:
             return
 
+        client = run_course_step(
+            client=client,
+            session_ctx=session_ctx,
+            session=session,
+            save_session=save_session,
+            model_name=settings.model,
+            model_state=model_state,
+            phase2_revised_dir=session_ctx.phase2_revised_dir,
+            revised_text=revised_text,
+            runtime=runtime,
+            fallback_keys=fallback_keys,
+            request_fallback_key=request_fallback_key,
+            on_model_switched=on_model_switched,
+            logger=logger,
+        )
+
         if not _export_html_and_finish(
             input_path=slides_path,
             session_ctx=session_ctx,
@@ -623,6 +646,7 @@ def esegui_appunti(
     book_mode=None,
     title=None,
     course=None,
+    lesson_date=None,
 ):
     """Public entry point, mirrors esegui_sbobinatura.
 
@@ -641,4 +665,5 @@ def esegui_appunti(
         book_mode=book_mode,
         title=title,
         course=course,
+        lesson_date=lesson_date,
     )

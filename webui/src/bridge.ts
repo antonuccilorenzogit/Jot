@@ -164,6 +164,13 @@ export interface ArchiveSession {
   course?: string;
   /** Slides/book attached to an audio lesson. */
   sources?: { slides_name?: string | null; book_name?: string | null; book_pages?: string };
+  /** In-app copy of the lesson summary ("sintesi"). */
+  summary_html?: string;
+  /** Documents/jot/<corso> with Lezioni and Sintesi. */
+  course_folder?: string;
+  lesson_number?: number;
+  /** yyyy-mm-dd */
+  lesson_date?: string;
 }
 
 export interface QuotaSnapshot {

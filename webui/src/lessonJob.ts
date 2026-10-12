@@ -1,5 +1,5 @@
 /** "Nuova lezione": audio, slides and book in any sensible combination. */
-import type { FileDescriptor, FileItem } from './appState';
+import type { AudioPart, FileDescriptor, FileItem } from './appState';
 import type { DocumentDescriptor } from './bridge';
 import { DEFAULT_SLIDES_PER_CHUNK, buildNotesJob, estimateNotesRequests } from './notesJob';
 
@@ -14,7 +14,23 @@ export type LessonSources = {
   audio: FileDescriptor | null;
   slides: DocumentDescriptor | null;
   book: DocumentDescriptor | null;
+  /** Further recordings of the same lesson (second part after the break...). */
+  parts?: AudioPart[];
 };
+
+/** One more request writes the "sintesi" of every lesson. */
+export const SUMMARY_REQUESTS = 1;
+
+export function totalAudioSeconds(sources: Pick<LessonSources, 'audio' | 'parts'>): number {
+  const main = Number(sources.audio?.duration || 0);
+  return main + (sources.parts ?? []).reduce((sum, p) => sum + Number(p.duration || 0), 0);
+}
+
+/** Today in the user's time zone, YYYY-MM-DD. */
+export function todayIso(now: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
 
 export type LessonMode = 'audio' | 'notes' | 'invalid' | 'empty';
 
@@ -36,28 +52,32 @@ export function estimateAudioRequests(durationSec: number): { chunks: number; re
 
 export function estimateLessonRequests(sources: LessonSources): number {
   const mode = lessonMode(sources);
-  if (mode === 'audio') return estimateAudioRequests(Number(sources.audio?.duration || 0)).total;
-  if (mode === 'notes' && sources.slides) return estimateNotesRequests(sources.slides.pages, DEFAULT_SLIDES_PER_CHUNK);
+  if (mode === 'audio') return estimateAudioRequests(totalAudioSeconds(sources)).total + SUMMARY_REQUESTS;
+  if (mode === 'notes' && sources.slides) {
+    return estimateNotesRequests(sources.slides.pages, DEFAULT_SLIDES_PER_CHUNK) + SUMMARY_REQUESTS;
+  }
   return 0;
 }
 
 export function lessonJobId(sources: LessonSources, bookPages: string): string {
-  const { audio, slides, book } = sources;
+  const { audio, slides, book, parts = [] } = sources;
   if (!audio) return '';
-  if (!slides && !book) return audio.id || audio.path || audio.name;
-  return `lesson::${audio.path}::${slides?.path ?? ''}::${book?.path ?? ''}::${book ? bookPages.trim() : ''}`;
+  if (!slides && !book && parts.length === 0) return audio.id || audio.path || audio.name;
+  const extra = parts.length ? `::+${parts.map(p => p.path).join('+')}` : '';
+  return `lesson::${audio.path}::${slides?.path ?? ''}::${book?.path ?? ''}::${book ? bookPages.trim() : ''}${extra}`;
 }
 
 export function buildLessonJob(
   sources: LessonSources,
-  options: { bookPages: string; title: string; course: string },
+  options: { bookPages: string; title: string; course: string; lessonDate?: string },
 ): FileItem | null {
-  const { audio, slides, book } = sources;
+  const { audio, slides, book, parts = [] } = sources;
   const title = options.title.trim();
   const course = options.course.trim();
   const extra = {
     ...(title ? { title } : {}),
     ...(course ? { course } : {}),
+    ...(options.lessonDate ? { lessonDate: options.lessonDate } : {}),
   };
   const mode = lessonMode(sources);
   if (mode === 'notes' && slides) {
@@ -69,19 +89,20 @@ export function buildLessonJob(
   return {
     id: lessonJobId(sources, options.bookPages),
     name: title || audio.name,
-    size: audio.size,
-    duration: Number(audio.duration || 0),
+    size: audio.size + parts.reduce((sum, p) => sum + Number(p.size || 0), 0),
+    duration: totalAudioSeconds(sources),
     path: audio.path,
     status: 'queued',
     progress: 0,
     phase: 0,
     kind: 'audio',
     ...extra,
-    ...(slides || book
+    ...(slides || book || parts.length
       ? {
           lesson: {
             ...(slides ? { slidesPath: slides.path, slidesName: slides.name, slidesCount: slides.pages } : {}),
             ...(book ? { bookPath: book.path, bookName: book.name, ...(pages ? { bookPages: pages } : {}) } : {}),
+            ...(parts.length ? { audioParts: parts.map(p => ({ ...p })) } : {}),
           },
         }
       : {}),

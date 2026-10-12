@@ -10,3 +10,4 @@ nh3>=0.3.7
 tzdata>=2026.3; sys_platform == 'win32'
 pypdf>=5.0
 python-pptx>=1.0
+latex2mathml>=3.81

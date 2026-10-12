@@ -567,7 +567,7 @@ def _read_raw_existing_config() -> dict:
 
 
 def _preserve_extra_config_keys(current_cfg: dict, data: dict) -> None:
-    for preserve_key in ("session_root",):
+    for preserve_key in ("session_root", "course_root"):
         if preserve_key in current_cfg and preserve_key not in data:
             data[preserve_key] = current_cfg[preserve_key]
 
