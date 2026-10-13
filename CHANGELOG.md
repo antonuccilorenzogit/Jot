@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.0 — 2026-10-13
+
+Formule di nuovo leggibili (anche nelle lezioni già fatte), sbobine rinominabili, PDF solo testo. Dettagli in [docs/releases/v1.3.0.md](docs/releases/v1.3.0.md).
+
 ## 1.2.0 — 2026-10-13
 
 Tutte le chiavi e tutti i modelli usati fino in fondo, niente tentativi a vuoto sui modelli sovraccarichi, contatore delle richieste sempre visibile. Dettagli in [docs/releases/v1.2.0.md](docs/releases/v1.2.0.md).
@@ -11,10 +15,6 @@ Modello di riserva quando Gemini resta sovraccarico. Dettagli in [docs/releases/
 ## 1.1.2 — 2026-10-13
 
 Fine dell'errore «Lettura quota fallita» su Windows. Dettagli in [docs/releases/v1.1.2.md](docs/releases/v1.1.2.md).
-
-## 1.1.2 — 2026-10-13
-
-Corretto l'errore «Lettura quota fallita» su Windows. Dettagli in [docs/releases/v1.1.2.md](docs/releases/v1.1.2.md).
 
 ## 1.1.1 — 2026-10-13
 

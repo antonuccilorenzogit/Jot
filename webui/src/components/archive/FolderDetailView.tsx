@@ -30,6 +30,7 @@ export interface FolderDetailViewProps {
   onEdit: () => void;
   onDelete: () => void;
   onRemoveSession: (dir: string) => void;
+  onRenameSession?: (dir: string, title: string) => void;
   onRemoveMultipleSessions?: (dirs: string[]) => void;
   onAddSession: (dir: string) => void;
   onAddMultipleSessions?: (dirs: string[]) => void;
@@ -53,6 +54,7 @@ export function FolderDetailView({
   onEdit,
   onDelete,
   onRemoveSession,
+  onRenameSession,
   onRemoveMultipleSessions,
   onAddSession,
   onAddMultipleSessions,
@@ -404,6 +406,7 @@ export function FolderDetailView({
                       onDeleteSession={onDeleteSession}
                       onRetryFailedRevisionBlocks={onRetryFailedRevisionBlocks}
                       onShareSession={onShareSession}
+                      onRename={onRenameSession}
                     />
                   ))}
                 </div>

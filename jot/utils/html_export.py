@@ -227,6 +227,84 @@ _HEADING_TIME_RE = re.compile(r"^(\s*#{1,6})\s+\[\[\s*t\s*=\s*(\d+)\s*\]\]\s*(.*
 _ANY_TIME_RE = re.compile(r"\[\[\s*t\s*=\s*\d+(?:\s*:\s*\d+)?\s*\]\]")
 
 
+# Some models write LaTeX between \( \) and \[ \] (sometimes with the backslash
+# doubled) instead of $ and $$: both become the dollar form jot understands.
+_PAREN_MATH_RE = re.compile(r"\\{1,2}\((.+?)\\{1,2}\)", re.DOTALL)
+_BRACKET_MATH_RE = re.compile(r"\\{1,2}\[(.+?)\\{1,2}\]", re.DOTALL)
+
+
+def normalize_math_delimiters(md: str) -> str:
+    r"""\(x\) -> $x$ and \[x\] -> $$x$$ (outside code fences)."""
+    if "\\(" not in md and "\\[" not in md:
+        return md
+    out: list[str] = []
+    in_fence = False
+    chunk: list[str] = []
+
+    def _flush() -> None:
+        if chunk:
+            text = "\n".join(chunk)
+            text = _BRACKET_MATH_RE.sub(lambda m: f"$${m.group(1).strip()}$$", text)
+            text = _PAREN_MATH_RE.sub(lambda m: f"${m.group(1).strip()}$", text)
+            out.append(text)
+            chunk.clear()
+
+    for line in md.split("\n"):
+        if line.strip().startswith("```"):
+            _flush()
+            in_fence = not in_fence
+            out.append(line)
+        elif in_fence:
+            out.append(line)
+        else:
+            chunk.append(line)
+    _flush()
+    return "\n".join(out)
+
+
+_EXISTING_MATH_RE = re.compile(
+    r'<span data-math="[^"]*">.*?</span>|<div data-math-block="[^"]*">.*?</div>',
+    re.DOTALL,
+)
+_HTML_BLOCK_MATH_RE = re.compile(
+    r"<p>\s*\\{1,2}\[(?P<latex>[^<]+?)\\{1,2}\]\s*</p>|\\{1,2}\[(?P<inline_block>[^<]+?)\\{1,2}\]",
+    re.DOTALL,
+)
+_HTML_INLINE_MATH_RE = re.compile(r"\\{1,2}\((?P<latex>[^<]+?)\\{1,2}\)", re.DOTALL)
+
+
+def repair_math_in_html(html_text: str) -> str:
+    r"""Lessons exported before this fix show \(x\) and \[x\] as plain text: turn
+    them into real formulas. Formulas that are already real are left alone."""
+    if "\\(" not in html_text and "\\[" not in html_text:
+        return html_text
+    kept: list[str] = []
+
+    def _keep(match: re.Match) -> str:
+        kept.append(match.group(0))
+        return f"\x00MATH{len(kept) - 1}\x00"
+
+    text = _EXISTING_MATH_RE.sub(_keep, html_text)
+
+    def _block(match: re.Match) -> str:
+        latex = _html.unescape(
+            (match.group("latex") or match.group("inline_block") or "").strip()
+        )
+        attr = _html.escape(latex, quote=True)
+        return f'<div data-math-block="{attr}">\\[{_html.escape(latex, quote=False)}\\]</div>'
+
+    def _inline(match: re.Match) -> str:
+        latex = _html.unescape(match.group("latex").strip())
+        attr = _html.escape(latex, quote=True)
+        return (
+            f'<span data-math="{attr}">\\({_html.escape(latex, quote=False)}\\)</span>'
+        )
+
+    text = _HTML_BLOCK_MATH_RE.sub(_block, text)
+    text = _HTML_INLINE_MATH_RE.sub(_inline, text)
+    return re.sub(r"\x00MATH(\d+)\x00", lambda m: kept[int(m.group(1))], text)
+
+
 def _protect_math(md: str) -> tuple[str, list[tuple[str, str]]]:
     """Swap LaTeX for placeholders so Markdown does not mangle it."""
     found: list[tuple[str, str]] = []
@@ -299,6 +377,7 @@ def build_html_document(title: str, markdown_text: str) -> str:
 
     normalized_markdown = normalize_heading_levels(markdown_text or "")
     normalized_markdown = apply_heading_timestamps(normalized_markdown)
+    normalized_markdown = normalize_math_delimiters(normalized_markdown)
     protected, math = _protect_math(normalized_markdown)
     html_body = markdown.markdown(
         protected, extensions=["extra", "sane_lists"], output_format="html"

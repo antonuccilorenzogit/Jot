@@ -210,11 +210,12 @@ def markdown_to_print_html(title: str, markdown_text: str) -> str:
         _protect_math,
         normalize_heading_levels,
         normalize_inline_star_lists,
+        normalize_math_delimiters,
         sanitize_html_basic,
     )
 
     md = normalize_inline_star_lists(strip_timestamps(markdown_text or ""))
-    md = normalize_heading_levels(md)
+    md = normalize_math_delimiters(normalize_heading_levels(md))
     protected, found = _protect_math(md)
     body = markdown.markdown(protected, extensions=["extra", "sane_lists"])
     body = sanitize_html_basic(body)

@@ -32,7 +32,7 @@ REGOLA 3 — STRUTTURA E FORMATTAZIONE
    Solo il termine è in grassetto, seguìto dai due punti.
 4. MASSIMO 2 LIVELLI DI NESTING: Usa al massimo un sotto-elenco (○) sotto un elenco (●). MAI scendere a un terzo livello (■). Se servono più dettagli, integra nel testo della voce superiore.
 5. GRASSETTI INLINE: Usa il **grassetto** nei paragrafi solo per i termini tecnici fondamentali quando vengono introdotti per la prima volta.
-6. FORMULE MATEMATICHE: scrivi le formule in LaTeX. In mezzo al testo tra singoli dollari ($E = mc^2$), le equazioni importanti su una riga a sé tra doppi dollari ($$E = \\frac{RT}{zF} \\ln\\frac{C_e}{C_i}$$). Subito dopo spiega i simboli a parole. Non usare il simbolo $ per nient'altro.
+6. FORMULE MATEMATICHE: scrivi le formule in LaTeX. In mezzo al testo tra singoli dollari ($E = mc^2$), le equazioni importanti su una riga a sé tra doppi dollari ($$E = \\frac{RT}{zF} \\ln\\frac{C_e}{C_i}$$). Subito dopo spiega i simboli a parole. Non usare il simbolo $ per nient'altro. MAI \\( \\) o \\[ \\]: solo $ e $$.
 7. TABELLE E SCHEMI: Per matrici e dati usa SEMPRE tabelle Markdown standard (| Col 1 | Col 2 |). ZERO diagrammi ASCII o grafici a caratteri (+---, [BOX], frecce): spiega i grafici a parole.
 
 REGOLA 4 — MASSIMO DETTAGLIO SENZA GONFIARE
@@ -53,7 +53,7 @@ REGOLE INVIOLABILI:
 5. NON RIASSUMERE MAI: Tutto ciò che NON è un doppione deve restare IDENTICO. Non accorciare spiegazioni tecniche, non eliminare dettagli unici, non semplificare.
 6. MANTIENI LA FORMATTAZIONE: Conserva titoli (## e ###), elenchi (- **Termine:** Spiegazione), e la struttura originale.
 7. MASSIMO 2 LIVELLI DI NESTING negli elenchi. Se trovi un terzo livello, integra il contenuto nel livello superiore.
-8. FORMULE E TABELLE: formule in LaTeX ($...$ nel testo, $$...$$ su riga separata), conservando esattamente quelle presenti. Tabelle solo in Markdown standard (| a | b |). NO diagrammi ASCII art.
+8. FORMULE E TABELLE: formule in LaTeX ($...$ nel testo, $$...$$ su riga separata, MAI \\( \\) o \\[ \\]), conservando esattamente quelle presenti. Tabelle solo in Markdown standard (| a | b |). NO diagrammi ASCII art.
 9. RIFERIMENTI AL MINUTO: i titoli possono iniziare con un marcatore come [[t=2610]]. Conservalo identico all'inizio del titolo; se fondi due sezioni, tieni il marcatore della prima. Non inventarne di nuovi.
 """
 
@@ -90,7 +90,7 @@ REGOLA 5 — STRUTTURA E FORMATTAZIONE
    - **Termine chiave:** Spiegazione completa in testo normale.
 5. MASSIMO 2 LIVELLI DI NESTING negli elenchi.
 6. GRASSETTI INLINE solo per i termini tecnici fondamentali alla prima comparsa.
-7. FORMULE MATEMATICHE: in LaTeX. Nel testo tra singoli dollari ($E = mc^2$), le equazioni importanti su riga separata tra doppi dollari ($$...$$), seguite dalla spiegazione dei simboli. Non usare il simbolo $ per nient'altro.
+7. FORMULE MATEMATICHE: in LaTeX. Nel testo tra singoli dollari ($E = mc^2$), le equazioni importanti su riga separata tra doppi dollari ($$...$$), seguite dalla spiegazione dei simboli. Non usare il simbolo $ per nient'altro. MAI \\( \\) o \\[ \\]: solo $ e $$.
 8. TABELLE: solo tabelle Markdown standard (| Col 1 | Col 2 |). ZERO diagrammi ASCII.
 
 REGOLA 6 — MASSIMO DETTAGLIO SENZA GONFIARE

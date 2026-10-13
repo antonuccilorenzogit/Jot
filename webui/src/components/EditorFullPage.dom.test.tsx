@@ -309,3 +309,18 @@ describe('EditorFullPage autosave', () => {
     expect((footer as HTMLElement).style.background).toBe('var(--editor-chrome-bg)');
   });
 });
+
+describe('EditorFullPage PDF export', () => {
+  it('the text-only PDF prints without pictures', () => {
+    const seen: string[][] = [];
+    const print = vi.fn(() => { seen.push([...document.documentElement.classList]); });
+    Object.defineProperty(window, 'print', { value: print, writable: true, configurable: true });
+    render(<EditorFullPage {...baseProps} />);
+    fireEvent.click(screen.getByLabelText('Esporta PDF solo testo'));
+    expect(seen[0]).toContain('is-printing-text-only');
+    expect(seen[0]).toContain('is-printing-notes');
+    fireEvent.click(screen.getByLabelText('Esporta PDF'));
+    expect(seen[1]).toContain('is-printing-notes');
+    expect(seen[1]).not.toContain('is-printing-text-only');
+  });
+});

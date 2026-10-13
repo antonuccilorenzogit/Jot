@@ -204,3 +204,35 @@ class SanitizeHtmlBasicTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MathDelimiterTests(unittest.TestCase):
+    def test_latex_parentheses_and_brackets_become_dollars(self):
+        from jot.utils.html_export import normalize_math_delimiters
+
+        md = "Il valore \\(RI\\) vale:\n\n\\[BD = RI + A\\]\n"
+        out = normalize_math_delimiters(md)
+        self.assertIn("$RI$", out)
+        self.assertIn("$$BD = RI + A$$", out)
+        self.assertNotIn("\\(", out)
+
+    def test_code_blocks_are_left_alone(self):
+        from jot.utils.html_export import normalize_math_delimiters
+
+        md = "```\nprint('\\(x\\)')\n```\n"
+        self.assertEqual(normalize_math_delimiters(md), md)
+
+    def test_built_document_renders_the_formulas(self):
+        html = build_html_document("t", "Il valore \\(RI\\) e\n\n\\[BD = RI + A\\]\n")
+        self.assertIn('data-math="RI"', html)
+        self.assertIn("data-math-block=", html)
+
+    def test_lessons_already_generated_are_repaired(self):
+        from jot.utils.html_export import repair_math_in_html
+
+        old = '<p>Il valore \\(RI\\) vale</p><p>\\[BD = RI + A\\]</p><span data-math="x">x</span>'
+        out = repair_math_in_html(old)
+        self.assertIn('<span data-math="RI">', out)
+        self.assertIn('<div data-math-block="BD = RI + A">', out)
+        self.assertIn('<span data-math="x">x</span>', out)
+        self.assertEqual(repair_math_in_html(out), out)

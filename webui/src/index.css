@@ -5042,6 +5042,19 @@ body,
   html.is-printing-notes .tiptap-editor img,
   html.is-printing-notes .tiptap-editor .katex-display { break-inside: avoid; }
   html.is-printing-notes .math-rendered { padding: 0 !important; background: none !important; box-shadow: none !important; }
+
+  /* PDF solo testo: only words and formulas, no pictures or colours. */
+  html.is-printing-text-only .tiptap-editor img,
+  html.is-printing-text-only .tiptap-editor picture,
+  html.is-printing-text-only .tiptap-editor figure,
+  html.is-printing-text-only .tiptap-editor video,
+  html.is-printing-text-only .tiptap-editor iframe,
+  html.is-printing-text-only .tiptap-editor .editor-image-node,
+  html.is-printing-text-only .tiptap-editor .editor-image-asset-wrapper { display: none !important; }
+  html.is-printing-text-only .tiptap-editor mark,
+  html.is-printing-text-only .tiptap-editor [style*="background"] { background: none !important; }
+  html.is-printing-text-only .tiptap-editor,
+  html.is-printing-text-only .tiptap-editor * { color: #000 !important; }
 }
 
 /* ── jot. brand ──────────────────────────────────── */

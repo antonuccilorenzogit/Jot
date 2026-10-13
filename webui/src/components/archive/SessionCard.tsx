@@ -1,7 +1,7 @@
 import { useState, type MouseEvent } from 'react';
 import {
   AlertTriangle, Check, ChevronLeft, ChevronRight, Download, ExternalLink,
-  Eye, FileText, Folder, FolderOpen, GraduationCap, NotebookPen, RotateCcw, Trash2, X,
+  Eye, FileText, Folder, FolderOpen, GraduationCap, NotebookPen, Pencil, RotateCcw, Trash2, X,
 } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -39,6 +39,48 @@ function courseOutputItems(
   return items;
 }
 
+
+/** The lesson name; becomes a text field while it is being renamed. */
+function SessionTitle({ name, editing, onSave, onCancel }: {
+  name: string;
+  editing: boolean;
+  onSave: (title: string) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState(name);
+  if (!editing) {
+    return <p className="text-sm font-semibold truncate tracking-tight text-[var(--text-primary)]">{name}</p>;
+  }
+  const commit = () => {
+    const clean = draft.trim().replace(/\s+/g, ' ');
+    if (clean && clean !== name) onSave(clean);
+    else onCancel();
+  };
+  return (
+    <input
+      autoFocus
+      aria-label="Nuovo nome della sbobina"
+      value={draft}
+      maxLength={120}
+      onChange={e => setDraft(e.target.value)}
+      onClick={e => e.stopPropagation()}
+      onPointerDown={e => e.stopPropagation()}
+      onFocus={e => e.currentTarget.select()}
+      onKeyDown={e => {
+        e.stopPropagation();
+        if (e.key === 'Enter') commit();
+        if (e.key === 'Escape') onCancel();
+      }}
+      onBlur={commit}
+      className="w-full text-sm font-semibold tracking-tight rounded-md px-1.5 py-0.5 bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--accent-text)] outline-none"
+    />
+  );
+}
+
+function renameItem(onRename: ((sessionDir: string, title: string) => void) | undefined, start: () => void): KebabMenuItem[] {
+  return onRename ? [{ label: 'Rinomina', icon: <Pencil className="w-3.5 h-3.5" />, onClick: start }] : [];
+}
+
 export interface DraggableSessionCardProps {
   session: ArchiveSession;
   allFolders: ArchiveFolder[];
@@ -55,6 +97,7 @@ export interface DraggableSessionCardProps {
   onShareSession?: (session: ArchiveSession) => void;
   courses?: string[];
   onSetCourse?: (sessionDir: string, course: string | null) => void;
+  onRename?: (sessionDir: string, title: string) => void;
 }
 
 export function DraggableSessionCard({
@@ -73,7 +116,9 @@ export function DraggableSessionCard({
   onShareSession,
   courses = [],
   onSetCourse,
+  onRename,
 }: DraggableSessionCardProps) {
+  const [renaming, setRenaming] = useState(false);
   const ts = session.completed_at_iso ? new Date(session.completed_at_iso).getTime() : 0;
   const openedAtMs = getOpenedAtMs(session, editorSessionsMap ?? loadAllEditorSessions());
   const [isRetryingBlocks, setIsRetryingBlocks] = useState(false);
@@ -130,6 +175,7 @@ export function DraggableSessionCard({
       icon: <ExternalLink className="w-3.5 h-3.5" />,
       onClick: () => onOpenFile(session.html_path),
     },
+    ...renameItem(onRename, () => setRenaming(true)),
     ...courseOutputItems(session, onPreview, onOpenFile),
     ...(onShareSession ? [{
       label: 'Esporta Sbobina...',
@@ -160,7 +206,7 @@ export function DraggableSessionCard({
 
   return (
     <div
-      onClick={() => onPreview(session.html_path, session.name, session.input_path, undefined, session.session_dir)}
+      onClick={() => { if (!renaming) onPreview(session.html_path, session.name, session.input_path, undefined, session.session_dir); }}
       className={`archive-session-card flex items-center justify-between gap-3 px-4 py-3 cursor-pointer group/card ${selected ? 'is-selected' : ''} ${hasRevisionWarnings && !selected ? 'is-warning' : ''}`.trim()}
       style={{
         ...(hasRevisionWarnings && !selected ? { borderColor: 'var(--warning-ring)' } : {}),
@@ -188,7 +234,13 @@ export function DraggableSessionCard({
         <FileText className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover/card:scale-105" style={{ color: hasRevisionWarnings ? 'var(--warning-text)' : 'var(--text-muted)' }} />
 
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold truncate tracking-tight text-[var(--text-primary)]">{session.name}</p>
+          <SessionTitle
+            key={renaming ? 'edit' : 'view'}
+            name={session.name}
+            editing={renaming}
+            onCancel={() => setRenaming(false)}
+            onSave={title => { setRenaming(false); onRename?.(session.session_dir, title); }}
+          />
           <div className="flex items-center gap-2 mt-0.5 text-xs min-w-0 flex-nowrap overflow-hidden" style={{ color: 'var(--text-muted)' }}>
             {ts > 0 && <span className="shrink-0">{formatRelativeTime(ts)}</span>}
             {session.course && (
@@ -325,6 +377,7 @@ export interface SortableSessionCardProps {
   canMoveToNextPage?: boolean;
   onMoveToPreviousPage?: () => void;
   onMoveToNextPage?: () => void;
+  onRename?: (sessionDir: string, title: string) => void;
 }
 
 export function SortableSessionCard({
@@ -344,7 +397,9 @@ export function SortableSessionCard({
   canMoveToNextPage,
   onMoveToPreviousPage,
   onMoveToNextPage,
+  onRename,
 }: SortableSessionCardProps) {
+  const [renaming, setRenaming] = useState(false);
   const {
     attributes,
     listeners,
@@ -383,6 +438,7 @@ export function SortableSessionCard({
       icon: <ExternalLink className="w-3.5 h-3.5" />,
       onClick: () => onOpenFile(session.html_path),
     },
+    ...renameItem(onRename, () => setRenaming(true)),
     ...courseOutputItems(session, onPreview, onOpenFile),
     ...(onShareSession ? [{
       label: 'Esporta Sbobina...',
@@ -408,8 +464,8 @@ export function SortableSessionCard({
     <div
       ref={setNodeRef}
       {...attributes}
-      {...(!disabled ? listeners : {})}
-      onClick={() => onPreview(session.html_path, session.name, session.input_path, undefined, session.session_dir)}
+      {...(!disabled && !renaming ? listeners : {})}
+      onClick={() => { if (!renaming) onPreview(session.html_path, session.name, session.input_path, undefined, session.session_dir); }}
       className={`archive-session-card flex items-center justify-between gap-3 px-4 py-3 group/card ${selected ? 'is-selected' : ''} ${hasRevisionWarnings && !selected ? 'is-warning' : ''}`.trim()}
       style={{
         transform: CSS.Transform.toString(transform),
@@ -451,7 +507,13 @@ export function SortableSessionCard({
           />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold truncate tracking-tight text-[var(--text-primary)]">{session.name}</p>
+          <SessionTitle
+            key={renaming ? 'edit' : 'view'}
+            name={session.name}
+            editing={renaming}
+            onCancel={() => setRenaming(false)}
+            onSave={title => { setRenaming(false); onRename?.(session.session_dir, title); }}
+          />
           <div className="flex items-center gap-2 mt-0.5 text-xs min-w-0 flex-nowrap overflow-hidden" style={{ color: 'var(--text-muted)' }}>
             {ts > 0 && <span className="shrink-0">{formatRelativeTime(ts)}</span>}
             {session.course && (

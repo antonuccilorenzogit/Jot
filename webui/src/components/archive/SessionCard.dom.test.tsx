@@ -343,3 +343,42 @@ describe('SessionCard components selection styling', () => {
     });
   });
 });
+
+describe('renaming a lesson', () => {
+  const renderCard = (onRename = vi.fn(), onPreview = vi.fn()) => {
+    render(
+      <DraggableSessionCard
+        session={mockSession}
+        allFolders={mockFolders}
+        onAssignToFolder={vi.fn()}
+        onRemoveFromFolder={vi.fn()}
+        onPreview={onPreview}
+        onOpenFile={vi.fn()}
+        onDeleteSession={vi.fn()}
+        onRename={onRename}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText('Altre opzioni'));
+    fireEvent.click(screen.getByText('Rinomina'));
+    return screen.getByLabelText('Nuovo nome della sbobina') as HTMLInputElement;
+  };
+
+  it('Enter saves the new name', () => {
+    const onRename = vi.fn();
+    const onPreview = vi.fn();
+    const input = renderCard(onRename, onPreview);
+    fireEvent.change(input, { target: { value: '  Istologia   lezione 9 ' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onRename).toHaveBeenCalledWith('/sessions/s1', 'Istologia lezione 9');
+    expect(onPreview).not.toHaveBeenCalled();
+  });
+
+  it('Esc leaves the name as it was', () => {
+    const onRename = vi.fn();
+    const input = renderCard(onRename);
+    fireEvent.change(input, { target: { value: 'Altro' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(onRename).not.toHaveBeenCalled();
+    expect(screen.getByText(mockSession.name)).toBeTruthy();
+  });
+});

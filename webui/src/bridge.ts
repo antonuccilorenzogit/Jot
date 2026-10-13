@@ -314,6 +314,7 @@ export interface PywebviewApi {
   suggest_lesson?: (audioPath: string | null, slidesPath: string | null, bookPath: string | null) => Promise<LessonSuggestion>;
   get_quota_snapshot?: (preferredModel?: string | null, fallbackModels?: string[] | null) => Promise<{ ok: boolean; result?: QuotaSnapshot; error?: string }>;
   recommend_models?: (apiKey?: string | null) => Promise<{ ok: boolean; preferred_model?: string; fallback_models?: string[]; error?: string }>;
+  set_session_title?: (sessionDir: string, title: string) => Promise<{ ok: boolean; title?: string; error?: string }>;
   set_session_course?: (sessionDir: string, course: string | null) => Promise<{ ok: boolean; course?: string | null; error?: string }>;
   check_path_exists?: (path: string) => Promise<{ ok: boolean; exists: boolean }>;
   collect_dropped_files?: (names: string[]) => Promise<{ ok: boolean }>;

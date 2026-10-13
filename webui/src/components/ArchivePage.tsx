@@ -249,6 +249,21 @@ export function ArchivePage({
     }
   }, [onNotification, onRefresh]);
 
+  const handleRename = useCallback(async (sessionDir: string, title: string) => {
+    const api = window.pywebview?.api;
+    if (!api?.set_session_title) return;
+    try {
+      const res = await api.set_session_title(sessionDir, title);
+      if (!res?.ok) {
+        onNotification?.('Nome non salvato', res?.error || 'Errore sconosciuto', 'error');
+        return;
+      }
+      await onRefresh?.();
+    } catch (e) {
+      onNotification?.('Nome non salvato', String(e), 'error');
+    }
+  }, [onNotification, onRefresh]);
+
   const {
     selectedSessionDirs,
     assignToFolder,
@@ -369,6 +384,7 @@ export function ArchivePage({
           onEdit={() => setFolderModal({ type: 'edit', folder: selectedFolder })}
           onDelete={() => setDeleteFolderConfirm({ folder: selectedFolder })}
           onRemoveSession={dir => removeFromFolder(dir, selectedFolder.id)}
+          onRenameSession={(dir, title) => void handleRename(dir, title)}
           onRemoveMultipleSessions={dirs => bulkRemoveFromFolders(dirs)}
           onAddSession={dir => assignToFolder(dir, selectedFolder.id)}
           onAddMultipleSessions={dirs => bulkAssignToFolder(selectedFolder.id, dirs)}
@@ -700,6 +716,7 @@ export function ArchivePage({
                     onShareSession={setSharingSession}
                     courses={courseNames}
                     onSetCourse={(dir, course) => void handleSetCourse(dir, course)}
+                    onRename={(dir, title) => void handleRename(dir, title)}
                   />
                 ))}
               </div>

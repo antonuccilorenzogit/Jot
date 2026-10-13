@@ -18,6 +18,7 @@ from jot.core.session_store import save_session
 from jot.core.shared import _atomic_write_json, _load_json
 from jot.services import config_service
 from jot.utils import file_ops
+from jot.utils.html_export import repair_math_in_html
 from jot.utils.logging_utils import redact_secrets
 
 if TYPE_CHECKING:
@@ -81,7 +82,8 @@ class HtmlControllerMixin:
             with self._resolved_cache_lock:
                 self._resolved_path_cache[requested_real_path] = real_path
         try:
-            content = file_ops.read_html_content(real_path)
+            # lessons made before 1.3.0 may show \(x\) / \[x\] as text: real formulas
+            content = repair_math_in_html(file_ops.read_html_content(real_path))
             shell = file_ops.extract_html_shell(content)
             if shell is not None:
                 with self._resolved_cache_lock:
