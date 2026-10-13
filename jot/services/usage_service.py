@@ -383,6 +383,7 @@ def _create_credential_entry(
         "last_error_iso": None,
         "last_used_iso": None,
         "exhausted_models": [],
+        "used_by_model": {},
     }
 
 
@@ -523,6 +524,7 @@ def _check_and_reset_unlocked(data: dict[str, Any]) -> bool:
         # Reset transiently failing credentials back to active/unused and clear exhausted_models
         for _k_id, cred in data.get("credentials", {}).items():
             cred["exhausted_models"] = []
+            cred["used_by_model"] = {}
             if cred.get("operational_status") == "temporarily_failing":
                 cred["operational_status"] = (
                     "active" if cred.get("last_used_iso") else "unused"
@@ -608,6 +610,9 @@ def record_request_attempt(api_key: str, model_name: str) -> None:
             if cred.get("operational_status") in ("unused", "temporarily_failing"):
                 cred["operational_status"] = "active"
             cred["last_used_iso"] = now_iso
+            # every request sent counts, also the ones that fail (Google counts them too)
+            per_model = cred.setdefault("used_by_model", {})
+            per_model[cleaned_model] = int(per_model.get(cleaned_model, 0)) + 1
 
         _get_or_create_project_limit_unlocked(data, cleaned_model)
         _save_raw_usage_unlocked(data)
@@ -1167,3 +1172,69 @@ def reset_daily_usage_for_tests() -> None:
                 os.remove(lock_path)
             except Exception:
                 pass
+
+
+# ---------------------------------------------------------------------------
+# Requests per key and model (each Google project has its own daily quota per model)
+# ---------------------------------------------------------------------------
+
+
+def request_matrix(api_keys: list[str], models: list[str]) -> dict[str, Any]:
+    """Requests used and left today for every key x model pair.
+
+    Google counts the daily quota per project and per model; every request sent
+    counts, also the ones that failed with 503. A pair Google already refused for
+    quota counts as empty even if the local count says otherwise.
+    """
+    keys = []
+    for key in api_keys:
+        cleaned = str(key or "").strip()
+        if cleaned and cleaned not in keys:
+            keys.append(cleaned)
+    model_list = []
+    for model in models:
+        cleaned = str(model or "").strip()
+        if cleaned and cleaned not in model_list:
+            model_list.append(cleaned)
+
+    with _interprocess_lock():
+        data = _load_raw_usage_unlocked()
+        if _check_and_reset_unlocked(data):
+            _save_raw_usage_unlocked(data)
+        creds = data.get("credentials", {}) or {}
+
+    cells: list[dict[str, Any]] = []
+    for key in keys:
+        cred = creds.get(hash_key(key)) or {}
+        per_model = cred.get("used_by_model") or {}
+        exhausted_models = cred.get("exhausted_models") or []
+        for model in model_list:
+            limit = get_limit_for_model(model)
+            used = int(per_model.get(model, 0) or 0)
+            exhausted = model in exhausted_models
+            cells.append(
+                {
+                    "key_id": hash_key(key),
+                    "masked_key": mask_key(key),
+                    "model": model,
+                    "used": used,
+                    "limit": limit,
+                    "remaining": 0 if exhausted else max(0, limit - used),
+                    "exhausted": exhausted,
+                }
+            )
+    return {
+        "used": sum(c["used"] for c in cells),
+        "capacity": sum(c["limit"] for c in cells),
+        "remaining": sum(c["remaining"] for c in cells),
+        "cells": cells,
+    }
+
+
+def remaining_for(api_key: str, model: str) -> tuple[int, bool]:
+    """(requests left today, refused by Google) for one key x model pair."""
+    matrix = request_matrix([api_key], [model])
+    cell = matrix["cells"][0] if matrix["cells"] else None
+    if cell is None:
+        return get_limit_for_model(model), False
+    return int(cell["remaining"]), bool(cell["exhausted"])

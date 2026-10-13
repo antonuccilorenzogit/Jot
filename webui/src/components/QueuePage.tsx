@@ -351,7 +351,7 @@ export function QueuePage({
                       slides: Boolean(bannerFile?.lesson?.slidesPath),
                       book: Boolean(bannerFile?.lesson?.bookPath || bannerFile?.notes?.bookPath),
                     }}
-                    quota={lesson?.quota ? { used: lesson.quota.used, limit: lesson.quota.limit } : null}
+                    quota={lesson?.quota ? { used: lesson.quota.used, limit: lesson.quota.limit, remaining: lesson.quota.remaining } : null}
                   />
                 </motion.div>
               ) : (

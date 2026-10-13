@@ -173,13 +173,17 @@ export interface ArchiveSession {
   lesson_date?: string;
 }
 
+/** Requests of today over every key x model pair (every request sent counts, also failed ones). */
 export interface QuotaSnapshot {
   used: number;
+  /** total of all pairs: keys x models x daily limit */
   limit: number;
   remaining: number;
   exhausted: boolean;
   has_reserve: boolean;
   reset_at: string;
+  keys?: number;
+  per_model?: { model: string; used: number; limit: number; remaining: number }[];
 }
 
 export interface LessonSuggestion {

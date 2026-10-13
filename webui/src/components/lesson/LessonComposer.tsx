@@ -205,8 +205,10 @@ export const LessonComposer = memo(function LessonComposer({
     summary = quota.remaining > 0
       ? `Circa ${requests} richieste: oggi ne restano ${quota.remaining}. Il resto riparte da solo ${describeReset(quota.reset_at)}, con l’app aperta.`
       : `Quota di oggi finita: parte da sola ${describeReset(quota.reset_at)}, con l’app aperta.`;
+  } else if (quota) {
+    summary = `Questa lezione: circa ${requests} ${requests === 1 ? 'richiesta' : 'richieste'} · oggi ne restano ${quota.remaining} su ${quota.limit}`;
   } else {
-    summary = `Circa ${requests} ${requests === 1 ? 'richiesta' : 'richieste'} su ${quota?.limit ?? 20} oggi`;
+    summary = `Questa lezione: circa ${requests} ${requests === 1 ? 'richiesta' : 'richieste'}`;
   }
 
   const audioFace = audio ? audioClock(totalAudioSeconds(sources)) : null;

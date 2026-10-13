@@ -32,7 +32,7 @@ interface ProcessingStatusBannerProps {
   /** Documents attached to the job, used by the live explanation. */
   sources?: { slides?: boolean; book?: boolean };
   /** Requests used today (small dial). */
-  quota?: { used: number; limit: number } | null;
+  quota?: { used: number; limit: number; remaining?: number } | null;
 }
 
 type PhaseInfo = {
@@ -444,7 +444,7 @@ export const ProcessingStatusBanner = memo(function ProcessingStatusBanner({
 
       <div className="processing-dials">
         <ProgressDial {...dial} />
-        {quota && <QuotaDial used={quota.used} limit={quota.limit} />}
+        {quota && <QuotaDial used={quota.used} limit={quota.limit} remaining={quota.remaining} />}
       </div>
 
       <div className="processing-explain" aria-live="polite" aria-label="Cosa sta succedendo">

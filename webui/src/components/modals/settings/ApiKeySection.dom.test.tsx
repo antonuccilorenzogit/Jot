@@ -454,7 +454,7 @@ describe('ApiKeySection component', () => {
 
     render(<ApiKeySection {...defaultProps} />);
 
-    expect(screen.getByText(/Le chiavi di riserva subentrano in ordine/i)).toBeTruthy();
+    expect(screen.getByText(/jot le usa tutte: cambia chiave/i)).toBeTruthy();
 
     const link = screen.getByRole('link', { name: /Ottieni gratis su aistudio\.google\.com/i });
     expect(link).toBeTruthy();

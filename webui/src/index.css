@@ -4517,6 +4517,29 @@ body,
 
 .topbar-count { color: var(--text-muted); font-weight: 600; }
 
+/* requests of today: always visible */
+.topbar-quota {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 12px;
+  margin-left: 6px;
+  border-radius: 18px;
+  background: var(--bg-panel);
+  box-shadow: var(--shadow-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: default;
+}
+:root[data-theme="dark"] .topbar-quota { background: var(--bg-surface); }
+.topbar-quota-main { font-size: 14px; font-weight: 800; color: var(--text-primary); }
+.topbar-quota-of { font-weight: 600; color: var(--text-faint); }
+.topbar-quota-left { font-size: 12px; font-weight: 650; color: var(--text-muted); }
+.topbar-quota.is-low .topbar-quota-left { color: var(--accent-yellow); }
+.topbar-quota.is-empty .topbar-quota-left { color: var(--error-text, #e5484d); }
+@media (max-width: 720px) { .topbar-quota-left { display: none; } }
+
 .topbar-live {
   width: 6px;
   height: 6px;

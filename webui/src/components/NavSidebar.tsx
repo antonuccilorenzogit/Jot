@@ -2,6 +2,7 @@ import { memo, type Dispatch, type ReactNode, type SetStateAction } from 'react'
 import { motion } from 'motion/react';
 import { Bell, Moon, SlidersHorizontal, Sun, Terminal } from 'lucide-react';
 import type { AppStatus } from '../appState';
+import type { QuotaSnapshot } from '../bridge';
 import { Wordmark } from './brand/Wordmark';
 import { MASCOT } from './brand/mascot';
 import { STORAGE_KEYS } from '../storageKeys';
@@ -29,6 +30,8 @@ interface NavSidebarProps {
   shakeBell: boolean;
   /** Lessons waiting or running, shown next to "Lezioni". */
   queueCount?: number;
+  /** Requests of today: always shown in the top bar. */
+  quota?: QuotaSnapshot | null;
 }
 
 const bellVariants = {
@@ -53,6 +56,7 @@ export const NavSidebar = memo(function NavSidebar({
   setIsNotificationsOpen,
   shakeBell,
   queueCount = 0,
+  quota = null,
 }: NavSidebarProps) {
   const apiStatus = !apiReady
     ? (bridgeDelayed ? 'error' : 'warning')
@@ -97,6 +101,8 @@ export const NavSidebar = memo(function NavSidebar({
         >
           Archivio
         </button>
+
+        {quota && <QuotaBox quota={quota} />}
 
         <span className="topbar-sep" aria-hidden="true" />
 
@@ -171,5 +177,23 @@ function RoundButton({
       {children}
       {badge && <span className={`round-button-badge is-${badge}`} aria-hidden="true" />}
     </button>
+  );
+}
+
+/** Requests used today over all keys and models, and how many are left. */
+function QuotaBox({ quota }: { quota: QuotaSnapshot }) {
+  const share = quota.limit > 0 ? quota.remaining / quota.limit : 0;
+  const tone = quota.remaining <= 0 ? 'is-empty' : share < 0.15 ? 'is-low' : '';
+  const shortName = (m: string) => m.replace(/^gemini-/, '').replace(/-flash$/, ' Flash');
+  const detail = [
+    `${quota.used} richieste usate oggi su ${quota.limit} disponibili${quota.keys ? ` (${quota.keys} ${quota.keys === 1 ? 'chiave' : 'chiavi'})` : ''}.`,
+    ...(quota.per_model || []).map(m => `${shortName(m.model)}: ne restano ${m.remaining} su ${m.limit}`),
+    'Contano anche le richieste fallite (es. server occupato): Google le conta. Si azzerano alle 9.',
+  ].join('\n');
+  return (
+    <span className={`topbar-quota ${tone}`.trim()} title={detail} aria-label={`Richieste di oggi: ${quota.used} usate su ${quota.limit}, ne restano ${quota.remaining}`}>
+      <span className="topbar-quota-main">{quota.used}<span className="topbar-quota-of">/{quota.limit}</span></span>
+      <span className="topbar-quota-left">restano {quota.remaining}</span>
+    </span>
   );
 }

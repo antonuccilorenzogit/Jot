@@ -76,7 +76,7 @@ describe('LessonComposer', () => {
     expect(screen.getByText('2:28')).toBeTruthy();
     expect((screen.getByLabelText('Nome della lezione') as HTMLInputElement).value).toBe('Reti lezione 5');
     // 2h28 = 11 blocks + 4 revisions + 1 sintesi
-    expect(screen.getByText('Circa 16 richieste su 20 oggi')).toBeTruthy();
+    expect(screen.getByText('Questa lezione: circa 16 richieste')).toBeTruthy();
 
     // the suggested chapter is applied at once and can still be changed
     expect((screen.getByLabelText('Pagine del libro') as HTMLInputElement).value).toBe('97-176');
@@ -144,6 +144,14 @@ describe('LessonComposer', () => {
     await click('Aggiungi slide');
     await click('Avvia');
     expect(onStart.mock.calls[0][0]).toMatchObject({ kind: 'notes', path: slides.path });
+  });
+
+  it('shows the requests of this lesson and what is left today over every key and model', async () => {
+    mockApi();
+    const quota: QuotaSnapshot = { used: 36, limit: 240, remaining: 204, exhausted: false, has_reserve: false, reset_at: '2026-10-11T07:00:00Z' };
+    setup({ quota });
+    await click('Aggiungi audio');
+    expect(screen.getByText('Questa lezione: circa 16 richieste · oggi ne restano 204 su 240')).toBeTruthy();
   });
 
   it('warns when today\'s quota is not enough', async () => {

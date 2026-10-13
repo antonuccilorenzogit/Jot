@@ -1177,7 +1177,7 @@ describe('App — executeRetryFromArchive concurrency protection', () => {
       expect(askMedia).toHaveBeenCalled();
       expect(await screen.findByText('nuovo.mp3')).toBeTruthy();
       // 1 hour = 5 blocks + 2 revisions
-      expect(screen.getByText('Circa 8 richieste su 20 oggi')).toBeTruthy();
+      expect(screen.getByText('Questa lezione: circa 8 richieste')).toBeTruthy();
     });
 
     it('handles drag over, leave, and drop events', async () => {

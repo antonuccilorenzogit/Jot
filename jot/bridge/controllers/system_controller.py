@@ -99,6 +99,7 @@ class SystemControllerMixin:
             model = str(preferred_model or cfg.get("preferred_model") or "").strip()
             snapshot = quota_snapshot(
                 model or "gemini-2.5-flash",
+                primary_key=cfg.get("api_key") or None,
                 fallback_keys=cfg.get("fallback_keys", []) or [],
                 fallback_models=(
                     fallback_models

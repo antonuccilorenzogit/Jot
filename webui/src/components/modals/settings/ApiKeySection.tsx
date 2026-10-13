@@ -819,7 +819,7 @@ export const ApiKeySection: React.FC<ApiKeySectionProps> = React.memo(({
 
       {/* 4. Quiet Footer Caption with AI Studio link */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-secondary)] leading-relaxed">
-        <span>Le chiavi di riserva subentrano in ordine quando la principale esaurisce la quota giornaliera.</span>
+        <span>Ogni chiave ha 20 richieste al giorno per ogni modello (se è in un progetto Google diverso). jot le usa tutte: cambia chiave quando una finisce le richieste di un modello e, se un modello è sovraccarico, passa subito a quello sotto.</span>
         <a
           href="https://aistudio.google.com/apikey"
           target="_blank"
