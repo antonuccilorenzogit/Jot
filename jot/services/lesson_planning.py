@@ -274,15 +274,17 @@ def suggest_chapter(
 
 def next_quota_reset(now_utc: datetime | None = None) -> datetime:
     """Next midnight in Pacific time (Gemini daily quota reset), in UTC."""
-    from zoneinfo import ZoneInfo
+    from jot.utils.pacific_time import to_pacific
 
-    now = now_utc or datetime.now(UTC)
-    pacific = ZoneInfo("America/Los_Angeles")
-    local = now.astimezone(pacific)
-    midnight = (local + timedelta(days=1)).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
-    return midnight.astimezone(UTC)
+    local = to_pacific(now_utc)
+    # midnight of the next Pacific day; the offset at that moment may differ
+    # (daylight saving), so it is resolved again for the new time
+    next_day = (local + timedelta(days=1)).date()
+    guess = datetime(
+        next_day.year, next_day.month, next_day.day, tzinfo=UTC
+    ) + timedelta(hours=8)
+    offset = to_pacific(guess).utcoffset() or timedelta(hours=-8)
+    return datetime(next_day.year, next_day.month, next_day.day, tzinfo=UTC) - offset
 
 
 def quota_snapshot(

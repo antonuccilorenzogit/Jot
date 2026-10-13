@@ -35,9 +35,11 @@ from jot.services.config_service import get_config_dir
 
 try:
     PACIFIC_TZ = ZoneInfo("America/Los_Angeles")
+    PACIFIC_TZ_OK = True
 except Exception:
-    # Fallback to Pacific offset if system tzdata is unavailable on Windows
+    # without tzdata (Windows) jot.utils.pacific_time applies the US daylight-saving rule
     PACIFIC_TZ = timezone(timedelta(hours=-7))
+    PACIFIC_TZ_OK = False
 
 SCHEMA_VERSION: int = 2
 
@@ -275,8 +277,12 @@ def get_current_authoritative_utc() -> datetime:
 
 def get_pacific_date_string(dt_utc: datetime | None = None) -> str:
     """Returns YYYY-MM-DD in Google's America/Los_Angeles timezone (midnight reset = 09:00 CEST)."""
+    from jot.utils.pacific_time import to_pacific
+
     utc = dt_utc or get_current_authoritative_utc()
-    return utc.astimezone(PACIFIC_TZ).strftime("%Y-%m-%d")
+    if PACIFIC_TZ_OK:
+        return utc.astimezone(PACIFIC_TZ).strftime("%Y-%m-%d")
+    return to_pacific(utc).strftime("%Y-%m-%d")
 
 
 def get_limit_for_model(model_name: str) -> int:
