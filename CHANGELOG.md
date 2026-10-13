@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1 — 2026-10-13
+
+Corretto il blocco infinito su «Blocco 1 di N». Dettagli in [docs/releases/v1.1.1.md](docs/releases/v1.1.1.md).
+
 ## 1.1.0 — 2026-10-12
 
 Due audio in una lezione, sintesi automatica e cartelle del corso. Dettagli in [docs/releases/v1.1.0.md](docs/releases/v1.1.0.md).

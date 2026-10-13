@@ -80,14 +80,34 @@ _RATE_LIMIT_SLEEP_SECONDS: float = 65.0
 _NEW_API_KEY_TIMEOUT_SECONDS: float = 600.0
 
 
+# Longest wait for one request (upload, transcription of a 15-minute block,
+# revision). Without a limit a connection that stalls half-way (Wi-Fi change,
+# PC waking up, a hiccup on Google's side) leaves the lesson stuck on the same
+# block forever; with it the request fails as a timeout and the usual retry
+# and model-fallback logic takes over. Overridable with JOT_REQUEST_TIMEOUT_S.
+_DEFAULT_REQUEST_TIMEOUT_SECONDS: int = 480
+
+
+def request_timeout_ms() -> int:
+    raw = os.environ.get("JOT_REQUEST_TIMEOUT_S", "")
+    try:
+        seconds = int(float(raw)) if raw.strip() else _DEFAULT_REQUEST_TIMEOUT_SECONDS
+    except ValueError:
+        seconds = _DEFAULT_REQUEST_TIMEOUT_SECONDS
+    return max(30, min(seconds, 3600)) * 1000
+
+
 def create_gemini_client(api_key: str) -> genai.Client:
     """Instantiate a Google GenAI Client with SDK-level retries explicitly disabled.
 
     generation_service is the sole retry authority to guarantee deterministic timings
-    and exact telemetry counting.
+    and exact telemetry counting. Every request has a time limit (see above).
     """
     cleaned_key = str(api_key or "").strip()
-    http_opts = types.HttpOptions(retry_options=types.HttpRetryOptions(attempts=1))
+    http_opts = types.HttpOptions(
+        retry_options=types.HttpRetryOptions(attempts=1),
+        timeout=request_timeout_ms(),
+    )
     return genai.Client(api_key=cleaned_key, http_options=http_opts)
 
 

@@ -65,6 +65,18 @@ class GeminiClientFactoryTests(unittest.TestCase):
         kwargs = constructor.call_args.kwargs
         self.assertEqual(kwargs["api_key"], "test-key")
         self.assertEqual(kwargs["http_options"].retry_options.attempts, 1)
+        # a stalled connection must not block a lesson forever
+        self.assertEqual(kwargs["http_options"].timeout, 480_000)
+
+    def test_request_timeout_can_be_changed_and_is_bounded(self):
+        from jot.services.generation_service import request_timeout_ms
+
+        with patch.dict("os.environ", {"JOT_REQUEST_TIMEOUT_S": "120"}):
+            self.assertEqual(request_timeout_ms(), 120_000)
+        with patch.dict("os.environ", {"JOT_REQUEST_TIMEOUT_S": "5"}):
+            self.assertEqual(request_timeout_ms(), 30_000)
+        with patch.dict("os.environ", {"JOT_REQUEST_TIMEOUT_S": "abc"}):
+            self.assertEqual(request_timeout_ms(), 480_000)
 
     def test_factory_propagates_configuration_errors(self):
         with (
@@ -203,6 +215,24 @@ class RetryWithQuotaTests(unittest.TestCase):
             model_unavailable_retry_delays=(0.0, 0.0, 0.0),
             rate_limit_sleep_seconds=0.0,
         )
+
+    def test_a_request_that_times_out_is_retried(self):
+        import httpx
+
+        calls = []
+
+        def fn(_client):
+            calls.append(1)
+            if len(calls) == 1:
+                raise httpx.ReadTimeout("The read operation timed out")
+            return "ok"
+
+        with patch(
+            "jot.services.network_service.is_network_offline_error", return_value=False
+        ):
+            _client, result = self._run(fn, max_attempts=3)
+        self.assertEqual(result, "ok")
+        self.assertEqual(len(calls), 2)
 
     def test_plain_503_retries_without_model_switch(self):
         primary_client = object()

@@ -41,6 +41,9 @@ def _run_cancellable(cmd, *, stop_event=None) -> tuple[int, str, str, bool]:
     """
     proc = subprocess.Popen(
         cmd,
+        # ffmpeg reads commands from stdin: in the desktop app there is no
+        # console, so give it an empty input instead of an inherited handle
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -109,6 +112,7 @@ def probe_duration_seconds(
         res = subprocess.run(
             [exe, "-hide_banner", "-i", p],
             capture_output=True,
+            stdin=subprocess.DEVNULL,
             creationflags=_creation_flags(),
             timeout=15,
         )
