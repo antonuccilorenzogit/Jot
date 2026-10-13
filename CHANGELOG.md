@@ -2,6 +2,10 @@
 
 ## 1.1.2 — 2026-10-13
 
+Modello di riserva quando Gemini è sovraccarico e fine dell'errore «Lettura quota fallita» su Windows. Dettagli in [docs/releases/v1.1.2.md](docs/releases/v1.1.2.md).
+
+## 1.1.2 — 2026-10-13
+
 Corretto l'errore «Lettura quota fallita» su Windows. Dettagli in [docs/releases/v1.1.2.md](docs/releases/v1.1.2.md).
 
 ## 1.1.1 — 2026-10-13

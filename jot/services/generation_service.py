@@ -824,6 +824,10 @@ def _check_deterministic_client_error(
         raise exc
 
 
+class _SwitchedModel(Exception):
+    """Internal signal: the current model stayed overloaded, the next one in the chain is now active."""
+
+
 def _handle_transient_capacity(
     callable_fn,
     client,
@@ -868,6 +872,21 @@ def _handle_transient_capacity(
             return False, client, None, other_exc
 
     actual_max_attempts = len(delays) + 1
+    # the model is still overloaded after every retry: move to the next model of the
+    # chain (the fallbacks chosen in the settings) instead of failing the lesson
+    if model_state is not None and next_model_in_chain(model_state):
+        print(
+            f"      [Modello {current_model} ancora sovraccarico dopo {actual_max_attempts} tentativi."
+            " Passo al modello di riserva...]"
+        )
+        _switch_to_next_model(
+            model_state,
+            on_model_switched=on_model_switched,
+            error_message="Server Gemini indisponibile.",
+            cause=other_exc or exc,
+        )
+        gov.on_success()  # the new model starts with a clean slate
+        return False, client, None, _SwitchedModel(current_model)
     gov.state = "exhausted"
     if runtime is not None and hasattr(runtime, "retry_state"):
         runtime.retry_state(gov.get_state_payload())
@@ -891,6 +910,8 @@ def _process_transient_capacity_fallback(
     on_model_switched,
 ) -> tuple[bool, Exception, str, int | None, bool]:
     """Returns (model_switched, exc, error, error_code, is_quota_related)."""
+    if isinstance(other_exc, _SwitchedModel):  # already moved to the next model
+        return True, other_exc, "", None, False
     error = _error_text(other_exc)
     error_code = _error_code(other_exc)
     is_quota_related = _is_quota_related(error, error_code)
