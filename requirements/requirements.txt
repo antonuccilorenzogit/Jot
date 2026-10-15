@@ -7,6 +7,6 @@ keyring>=25.7.0
 pywebview>=6.2.1
 plyer>=2.1.0
 nh3>=0.3.7
-tzdata>=2026.3; sys_platform == 'win32'
+tzdata>=2026.5; sys_platform == 'win32'
 pypdf>=5.0
 python-pptx>=1.0
