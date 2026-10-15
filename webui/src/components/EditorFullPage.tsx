@@ -1,6 +1,6 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Check, Copy, ExternalLink, FileDown, FileText, FileType, Headphones, Loader2, Moon, Plus, Sun } from 'lucide-react';
+import { ArrowLeft, Check, Copy, ExternalLink, FileDown, FileText, Headphones, Loader2, Moon, Plus, Sun } from 'lucide-react';
 import { clickedTimeChip, requestAudioSeek, sectionTimeFor } from '../audioSeek';
 import type { Heading } from './RichTextEditor';
 import { normalizePreviewHtmlContent } from '../previewHtml';
@@ -197,12 +197,10 @@ export function EditorFullPage({
     copiedTimerRef.current = window.setTimeout(() => setIsCopied(false), 2000);
   };
 
-  const handleExportPdf = (textOnly = false) => {
-    const classes = textOnly ? ['is-printing-notes', 'is-printing-text-only'] : ['is-printing-notes'];
-    document.documentElement.classList.remove('is-printing-notes', 'is-printing-text-only');
-    document.documentElement.classList.add(...classes);
+  const handleExportPdf = () => {
+    document.documentElement.classList.add('is-printing-notes');
     const done = () => {
-      document.documentElement.classList.remove(...classes);
+      document.documentElement.classList.remove('is-printing-notes');
       window.removeEventListener('afterprint', done);
     };
     window.addEventListener('afterprint', done);
@@ -323,20 +321,12 @@ export function EditorFullPage({
                 </button>
               )}
               <button
-                onClick={() => handleExportPdf()}
+                onClick={handleExportPdf}
                 className="icon-button"
                 title="Esporta PDF"
                 aria-label="Esporta PDF"
               >
                 <FileDown className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleExportPdf(true)}
-                className="icon-button"
-                title="Esporta PDF solo testo (senza immagini)"
-                aria-label="Esporta PDF solo testo"
-              >
-                <FileType className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setThemeMode(prev => prev === 'dark' ? 'light' : 'dark')}

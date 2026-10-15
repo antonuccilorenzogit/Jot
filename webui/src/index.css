@@ -4517,29 +4517,6 @@ body,
 
 .topbar-count { color: var(--text-muted); font-weight: 600; }
 
-/* requests of today: always visible */
-.topbar-quota {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-  min-height: 36px;
-  padding: 8px 12px;
-  margin-left: 6px;
-  border-radius: 18px;
-  background: var(--bg-panel);
-  box-shadow: var(--shadow-soft);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  cursor: default;
-}
-:root[data-theme="dark"] .topbar-quota { background: var(--bg-surface); }
-.topbar-quota-main { font-size: 14px; font-weight: 800; color: var(--text-primary); }
-.topbar-quota-of { font-weight: 600; color: var(--text-faint); }
-.topbar-quota-left { font-size: 12px; font-weight: 650; color: var(--text-muted); }
-.topbar-quota.is-low .topbar-quota-left { color: var(--accent-yellow); }
-.topbar-quota.is-empty .topbar-quota-left { color: var(--error-text, #e5484d); }
-@media (max-width: 720px) { .topbar-quota-left { display: none; } }
-
 .topbar-live {
   width: 6px;
   height: 6px;
@@ -5042,19 +5019,6 @@ body,
   html.is-printing-notes .tiptap-editor img,
   html.is-printing-notes .tiptap-editor .katex-display { break-inside: avoid; }
   html.is-printing-notes .math-rendered { padding: 0 !important; background: none !important; box-shadow: none !important; }
-
-  /* PDF solo testo: only words and formulas, no pictures or colours. */
-  html.is-printing-text-only .tiptap-editor img,
-  html.is-printing-text-only .tiptap-editor picture,
-  html.is-printing-text-only .tiptap-editor figure,
-  html.is-printing-text-only .tiptap-editor video,
-  html.is-printing-text-only .tiptap-editor iframe,
-  html.is-printing-text-only .tiptap-editor .editor-image-node,
-  html.is-printing-text-only .tiptap-editor .editor-image-asset-wrapper { display: none !important; }
-  html.is-printing-text-only .tiptap-editor mark,
-  html.is-printing-text-only .tiptap-editor [style*="background"] { background: none !important; }
-  html.is-printing-text-only .tiptap-editor,
-  html.is-printing-text-only .tiptap-editor * { color: #000 !important; }
 }
 
 /* ── jot. brand ──────────────────────────────────── */
@@ -5274,9 +5238,3 @@ body,
   .jot-splash-walker { width: 160px; height: 170px; }
 }
 .setup-wordmark { font-size: 56px; margin-bottom: 14px; }
-
-.lesson-source-part { display: inline-flex; align-items: center; gap: 2px; max-width: 200px; }
-.lesson-source-actions { display: inline-flex; gap: 2px; }
-.lesson-link.is-small { min-height: 26px; padding: 0 8px; font-size: 16px; line-height: 1; }
-.lesson-field.is-date { flex: 0 1 220px; }
-.lesson-field.is-date .lesson-input { color-scheme: light dark; }

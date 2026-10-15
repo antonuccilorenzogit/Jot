@@ -594,7 +594,6 @@ export default function App() {
         setIsNotificationsOpen={setIsNotificationsOpen}
         shakeBell={shakeBell}
         queueCount={pendingCount}
-        quota={quota}
       />
 
       <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">

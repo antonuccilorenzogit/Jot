@@ -67,23 +67,6 @@ def find_candidate_audio_path(
     return None
 
 
-def _course_output_fields(data: dict) -> dict[str, Any]:
-    fields: dict[str, Any] = {}
-    summary = str((data.get("outputs") or {}).get("summary_html") or "")
-    if summary and os.path.isfile(summary):
-        fields["summary_html"] = summary
-    course_output = data.get("course_output")
-    if isinstance(course_output, dict):
-        folder = str(course_output.get("folder") or "")
-        if folder and os.path.isdir(folder):
-            fields["course_folder"] = folder
-        if course_output.get("number"):
-            fields["lesson_number"] = int(course_output["number"])
-    if data.get("lesson_date"):
-        fields["lesson_date"] = str(data["lesson_date"])
-    return fields
-
-
 def _lesson_sources_summary(data: dict) -> dict[str, Any]:
     raw = data.get("lesson")
     lesson: dict = raw if isinstance(raw, dict) else {}
@@ -94,6 +77,11 @@ def _lesson_sources_summary(data: dict) -> dict[str, Any]:
         "book_name": os.path.basename(book) if book else None,
         "book_pages": str(lesson.get("book_pages") or ""),
     }
+
+
+def _summary_field(data: dict) -> dict[str, str]:
+    summary = str((data.get("outputs") or {}).get("summary_html") or "")
+    return {"summary_html": summary} if summary and os.path.isfile(summary) else {}
 
 
 def list_completed_sessions(
@@ -185,7 +173,7 @@ def list_completed_sessions(
                 "completion_status": completion_status,
                 "kind": "notes" if data.get("kind") == "notes" else "audio",
                 **({"course": str(data["course"])} if data.get("course") else {}),
-                **_course_output_fields(data),
+                **_summary_field(data),
                 **(
                     {"sources": _lesson_sources_summary(data)}
                     if data.get("lesson")

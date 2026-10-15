@@ -346,35 +346,6 @@ class SessionControllerMixin:
         except Exception as e:
             return bridge_error(e)
 
-    def set_session_title(self, session_dir: str, title: str) -> dict:
-        """Rename a lesson (the name shown in the archive and in the editor)."""
-        import json as _json
-
-        try:
-            session_root = self._get_session_root()
-            abs_dir = os.path.realpath(session_dir)
-            if not _path_under_root(abs_dir, os.path.realpath(session_root)):
-                return bridge_error("Percorso non valido")
-            session_path = os.path.join(abs_dir, "session.json")
-            if not os.path.isfile(session_path):
-                return bridge_error("session.json non trovato")
-            with open(session_path, encoding="utf-8") as fh:
-                data = _json.load(fh)
-            if not isinstance(data, dict):
-                return bridge_error("session.json non valido")
-            clean = " ".join(str(title or "").split())[:120]
-            if not clean:
-                return bridge_error("Il nome non può essere vuoto")
-            data["title"] = clean
-            data["custom_title"] = clean
-            _atomic_write_json(session_path, data)
-            with self._sessions_cache_lock:
-                self._sessions_cache = None
-                self._sessions_cache_gen += 1
-            return bridge_ok(title=clean)
-        except Exception as e:
-            return bridge_error(e)
-
     def cleanup_old_sessions(
         self,
         max_age_days: int = 0,

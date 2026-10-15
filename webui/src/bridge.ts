@@ -162,28 +162,19 @@ export interface ArchiveSession {
   notes_info?: { total_slides: number; book_name?: string | null; book_pages?: string };
   /** Course the lesson belongs to (archive grouping). */
   course?: string;
-  /** Slides/book attached to an audio lesson. */
-  sources?: { slides_name?: string | null; book_name?: string | null; book_pages?: string };
   /** In-app copy of the lesson summary ("sintesi"). */
   summary_html?: string;
-  /** Documents/jot/<corso> with Lezioni and Sintesi. */
-  course_folder?: string;
-  lesson_number?: number;
-  /** yyyy-mm-dd */
-  lesson_date?: string;
+  /** Slides/book attached to an audio lesson. */
+  sources?: { slides_name?: string | null; book_name?: string | null; book_pages?: string };
 }
 
-/** Requests of today over every key x model pair (every request sent counts, also failed ones). */
 export interface QuotaSnapshot {
   used: number;
-  /** total of all pairs: keys x models x daily limit */
   limit: number;
   remaining: number;
   exhausted: boolean;
   has_reserve: boolean;
   reset_at: string;
-  keys?: number;
-  per_model?: { model: string; used: number; limit: number; remaining: number }[];
 }
 
 export interface LessonSuggestion {
@@ -314,7 +305,6 @@ export interface PywebviewApi {
   suggest_lesson?: (audioPath: string | null, slidesPath: string | null, bookPath: string | null) => Promise<LessonSuggestion>;
   get_quota_snapshot?: (preferredModel?: string | null, fallbackModels?: string[] | null) => Promise<{ ok: boolean; result?: QuotaSnapshot; error?: string }>;
   recommend_models?: (apiKey?: string | null) => Promise<{ ok: boolean; preferred_model?: string; fallback_models?: string[]; error?: string }>;
-  set_session_title?: (sessionDir: string, title: string) => Promise<{ ok: boolean; title?: string; error?: string }>;
   set_session_course?: (sessionDir: string, course: string | null) => Promise<{ ok: boolean; course?: string | null; error?: string }>;
   check_path_exists?: (path: string) => Promise<{ ok: boolean; exists: boolean }>;
   collect_dropped_files?: (names: string[]) => Promise<{ ok: boolean }>;

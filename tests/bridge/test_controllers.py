@@ -812,23 +812,3 @@ class TestSystemControllerDiagnostics(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-class TestRenameSession(unittest.TestCase):
-    def test_rename_writes_the_title_and_refreshes_the_archive(self):
-        import json
-
-        with tempfile.TemporaryDirectory() as root:
-            sdir = os.path.join(root, "lezione")
-            os.makedirs(sdir)
-            with open(os.path.join(sdir, "session.json"), "w", encoding="utf-8") as fh:
-                json.dump({"input": {"path": "a.mp3"}}, fh)
-            host = DummySessionHost(root)
-            res = host.set_session_title(sdir, "  Economia   lezione 3 ")
-            self.assertTrue(res.get("ok"))
-            self.assertEqual(res.get("title"), "Economia lezione 3")
-            with open(os.path.join(sdir, "session.json"), encoding="utf-8") as fh:
-                self.assertEqual(json.load(fh)["title"], "Economia lezione 3")
-            self.assertEqual(host._sessions_cache_gen, 1)
-            self.assertFalse(host.set_session_title(sdir, "   ").get("ok"))
-            self.assertFalse(host.set_session_title("/etc", "x").get("ok"))

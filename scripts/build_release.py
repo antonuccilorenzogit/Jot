@@ -250,9 +250,6 @@ def pyinstaller_command(target: str, ui: str) -> list[str]:
             "pypdf",
             "--collect-data",
             "certifi",
-            # LaTeX -> MathML for the course folder files (needs its symbol table)
-            "--collect-data",
-            "latex2mathml",
             "--hidden-import",
             "webview",
             "--hidden-import",

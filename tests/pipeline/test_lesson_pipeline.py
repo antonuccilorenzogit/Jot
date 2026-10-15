@@ -80,10 +80,6 @@ class LessonPipelineTests(unittest.TestCase):
         )
         self.calls: list[dict] = []
         self.summary_calls: list = []
-        self.courses = os.path.join(self.tmp, "corsi")
-        env = patch.dict(os.environ, {"JOT_COURSE_ROOT": self.courses})
-        env.start()
-        self.addCleanup(env.stop)
 
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
@@ -94,10 +90,10 @@ class LessonPipelineTests(unittest.TestCase):
 
         def generate(model, contents, config):
             system = str(getattr(config, "system_instruction", "") or "")
-            is_revision = "revisore editoriale" in system
-            if "tutor universitario" in system:
+            if "tutor universitario" in system:  # the sintesi, last request
                 self.summary_calls.append(contents)
                 return _FakeResponse(SUMMARY)
+            is_revision = "revisore editoriale" in system
             self.calls.append(
                 {
                     "revision": is_revision,
@@ -135,13 +131,10 @@ class LessonPipelineTests(unittest.TestCase):
                 book_path=self.book,
                 title="Reti — Lezione 5",
                 course="Reti di calcolatori",
-                lesson_date="2026-10-12",
             ),
             self._client(),
         )
         self.assertEqual(self.adapter.last_run_status, "completed")
-        # the summary is one more request
-        self.assertEqual(len(self.summary_calls), 1)
         transcription = [c for c in self.calls if not c["revision"]]
         revision = [c for c in self.calls if c["revision"]]
         # one request per audio block plus one per revision block: no extras
@@ -173,63 +166,6 @@ class LessonPipelineTests(unittest.TestCase):
         self.assertFalse(
             os.path.exists(os.path.join(self.session_dir, "book_index.json"))
         )
-
-        # course folder: Lezioni/L <date> and Sintesi/S <date>
-        course_dir = os.path.join(self.courses, "Reti di calcolatori")
-        lesson_file = os.path.join(course_dir, "Lezioni", "L 12-10-2026.html")
-        summary_file = os.path.join(course_dir, "Sintesi", "S 12-10-2026.html")
-        self.assertTrue(os.path.isfile(lesson_file))
-        self.assertTrue(os.path.isfile(summary_file))
-        with open(summary_file, encoding="utf-8") as f:
-            summary_html = f.read()
-        self.assertIn(
-            "Reti di calcolatori \u2013 Lezione 1 \u2013 12/10/2026", summary_html
-        )
-        self.assertIn("<math", summary_html)
-        self.assertNotIn("Titolo provvisorio", summary_html)
-        with open(lesson_file, encoding="utf-8") as f:
-            lesson_html = f.read()
-        self.assertIn("L 12-10-2026", lesson_html)
-        self.assertIn("<math", lesson_html)
-        self.assertEqual(session["course_output"]["number"], 1)
-        self.assertTrue(os.path.isfile(session["outputs"]["summary_html"]))
-
-    def test_two_audio_parts_become_one_lesson(self):
-        second = _generate_synthetic_wav(
-            os.path.join(self.tmp, "lezione_parte2.wav"), duration_sec=2.0
-        )
-        session = self._run(
-            LessonSources(audio_parts=[second], course="Analisi 2"), self._client()
-        )
-        self.assertEqual(self.adapter.last_run_status, "completed")
-        merged = session["input"]["path"]
-        self.assertTrue(merged.endswith("audio_unito.mp3"))
-        from jot.services.audio_service import probe_media_duration
-
-        duration, _reason = probe_media_duration(merged)
-        assert duration is not None
-        self.assertGreater(duration, 3.5)
-        self.assertEqual(session["lesson"]["audio_parts"], [second])
-        self.assertTrue(
-            os.path.isdir(os.path.join(self.courses, "Analisi 2", "Lezioni"))
-        )
-
-    def test_a_failing_summary_does_not_fail_the_lesson(self):
-        client = self._client()
-        original = client.models.generate_content.side_effect
-
-        def generate(model, contents, config):
-            if "tutor universitario" in str(getattr(config, "system_instruction", "")):
-                raise ValueError("400 INVALID_ARGUMENT")
-            return original(model, contents, config)
-
-        client.models.generate_content.side_effect = generate
-        session = self._run(LessonSources(course="Fisica"), client)
-        self.assertEqual(self.adapter.last_run_status, "completed")
-        lessons = os.path.join(self.courses, "Fisica", "Lezioni")
-        self.assertEqual(len(os.listdir(lessons)), 1)
-        self.assertFalse(os.path.isdir(os.path.join(self.courses, "Fisica", "Sintesi")))
-        self.assertNotIn("summary_html", session.get("outputs", {}))
 
     def test_book_revision_that_drops_content_is_rejected(self):
         self._run(

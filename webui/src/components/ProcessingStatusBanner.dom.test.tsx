@@ -23,43 +23,6 @@ describe('ProcessingStatusBanner', () => {
     expect(screen.queryByText(/ETA/i)).toBeNull();
   });
 
-  it('shows the sintesi as the last step', () => {
-    render(
-      <ProcessingStatusBanner
-        appState="processing"
-        currentPhase="Fase 3/3: sintesi"
-        currentModel="gemini-3.6-flash"
-        activeProgress={98}
-        workDone={{ chunks: 11, macro: 4 }}
-        workTotals={{ chunks: 11, macro: 4 }}
-        currentFileIndex={0}
-        currentBatchTotal={1}
-        currentFileName="Diritto privato.mp3"
-        startedAt={Date.now() - 90_000}
-      />,
-    );
-    expect(screen.getAllByText('Sintesi').length).toBeGreaterThan(0);
-    expect(screen.getByLabelText('Sintesi della lezione')).toBeTruthy();
-  });
-
-  it('explains the merge of two recordings', () => {
-    render(
-      <ProcessingStatusBanner
-        appState="processing"
-        currentPhase="Fase 0/3: unione degli audio"
-        currentModel="gemini-3.6-flash"
-        activeProgress={2}
-        workDone={{ chunks: 0, macro: 0 }}
-        workTotals={{ chunks: 0, macro: 0 }}
-        currentFileIndex={0}
-        currentBatchTotal={1}
-        currentFileName="Diritto privato.mp3"
-        startedAt={Date.now() - 5_000}
-      />,
-    );
-    expect(screen.getAllByText('Unione degli audio').length).toBeGreaterThan(0);
-  });
-
   it('renders explanatory tooltips for each step', () => {
     render(
       <ProcessingStatusBanner

@@ -215,7 +215,6 @@ def _is_model_unavailable(error_text: str, error_code: int | None) -> bool:
         "model is overloaded",
         "overloaded",
         "temporarily unavailable",
-        "high demand",
     )
     return any(marker in error_text for marker in markers)
 

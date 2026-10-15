@@ -219,11 +219,6 @@ class PipelineCancellationTests(unittest.TestCase):
 
             with (
                 patch("google.genai.Client", _FakeClient),
-                # the course step (summary + course folder) has its own tests
-                patch(
-                    "jot.pipeline.pipeline.run_course_step",
-                    side_effect=lambda **kwargs: kwargs["client"],
-                ),
                 patch(
                     "jot.pipeline.pipeline.initialize_session_context",
                     return_value=session_ctx,
@@ -314,11 +309,6 @@ class PipelineCancellationTests(unittest.TestCase):
 
             with (
                 patch("google.genai.Client", _FakeClient),
-                # the course step (summary + course folder) has its own tests
-                patch(
-                    "jot.pipeline.pipeline.run_course_step",
-                    side_effect=lambda **kwargs: kwargs["client"],
-                ),
                 patch(
                     "jot.pipeline.pipeline.initialize_session_context",
                     return_value=session_ctx,
@@ -417,11 +407,6 @@ class PipelineCancellationTests(unittest.TestCase):
 
             with (
                 patch("google.genai.Client", _FakeClient),
-                # the course step (summary + course folder) has its own tests
-                patch(
-                    "jot.pipeline.pipeline.run_course_step",
-                    side_effect=lambda **kwargs: kwargs["client"],
-                ),
                 patch(
                     "jot.pipeline.pipeline.initialize_session_context",
                     return_value=session_ctx,
@@ -486,11 +471,6 @@ class PipelineCancellationTests(unittest.TestCase):
 
             with (
                 patch("google.genai.Client", _FakeClient),
-                # the course step (summary + course folder) has its own tests
-                patch(
-                    "jot.pipeline.pipeline.run_course_step",
-                    side_effect=lambda **kwargs: kwargs["client"],
-                ),
                 patch(
                     "jot.pipeline.pipeline.initialize_session_context",
                     return_value=session_ctx,
@@ -568,11 +548,6 @@ class PipelineCancellationTests(unittest.TestCase):
 
             with (
                 patch("google.genai.Client", _FakeClient),
-                # the course step (summary + course folder) has its own tests
-                patch(
-                    "jot.pipeline.pipeline.run_course_step",
-                    side_effect=lambda **kwargs: kwargs["client"],
-                ),
                 patch(
                     "jot.pipeline.pipeline.initialize_session_context",
                     return_value=session_ctx,
@@ -648,11 +623,6 @@ class PipelineCancellationTests(unittest.TestCase):
 
             with (
                 patch("google.genai.Client", _FakeClient),
-                # the course step (summary + course folder) has its own tests
-                patch(
-                    "jot.pipeline.pipeline.run_course_step",
-                    side_effect=lambda **kwargs: kwargs["client"],
-                ),
                 patch(
                     "jot.pipeline.pipeline.initialize_session_context",
                     return_value=session_ctx,
@@ -735,11 +705,6 @@ class PipelineCancellationTests(unittest.TestCase):
 
             with (
                 patch("google.genai.Client", _FakeClient),
-                # the course step (summary + course folder) has its own tests
-                patch(
-                    "jot.pipeline.pipeline.run_course_step",
-                    side_effect=lambda **kwargs: kwargs["client"],
-                ),
                 patch(
                     "jot.pipeline.pipeline.initialize_session_context",
                     return_value=session_ctx,
@@ -836,11 +801,6 @@ class PipelineCancellationTests(unittest.TestCase):
 
             with (
                 patch("google.genai.Client", _FakeClient),
-                # the course step (summary + course folder) has its own tests
-                patch(
-                    "jot.pipeline.pipeline.run_course_step",
-                    side_effect=lambda **kwargs: kwargs["client"],
-                ),
                 patch(
                     "jot.pipeline.pipeline.initialize_session_context",
                     return_value=session_ctx,
@@ -936,11 +896,6 @@ class PipelineCleanupCacheTests(unittest.TestCase):
 
         return [
             patch("google.genai.Client", _FakeClient),
-            # the course step (summary + course folder) has its own tests
-            patch(
-                "jot.pipeline.pipeline.run_course_step",
-                side_effect=lambda **kwargs: kwargs["client"],
-            ),
             patch(
                 "jot.pipeline.pipeline.initialize_session_context",
                 return_value=session_ctx,
@@ -1222,11 +1177,6 @@ class PipelineStageRoutingTests(unittest.TestCase):
         """Return the minimal patch set to get past init and into the stage router."""
         return [
             patch("google.genai.Client", _FakeClient),
-            # the course step (summary + course folder) has its own tests
-            patch(
-                "jot.pipeline.pipeline.run_course_step",
-                side_effect=lambda **kwargs: kwargs["client"],
-            ),
             patch(
                 "jot.pipeline.pipeline.initialize_session_context",
                 return_value=session_ctx,
@@ -1362,11 +1312,6 @@ class PipelineEarlyExitTests(unittest.TestCase):
 
             with (
                 patch("google.genai.Client", _FakeClient),
-                # the course step (summary + course folder) has its own tests
-                patch(
-                    "jot.pipeline.pipeline.run_course_step",
-                    side_effect=lambda **kwargs: kwargs["client"],
-                ),
                 patch(
                     "jot.pipeline.pipeline.initialize_session_context",
                     return_value=session_ctx,
@@ -1404,11 +1349,6 @@ class PipelineEarlyExitTests(unittest.TestCase):
 
             with (
                 patch("google.genai.Client", _FakeClient),
-                # the course step (summary + course folder) has its own tests
-                patch(
-                    "jot.pipeline.pipeline.run_course_step",
-                    side_effect=lambda **kwargs: kwargs["client"],
-                ),
                 patch(
                     "jot.pipeline.pipeline.initialize_session_context",
                     return_value=session_ctx,

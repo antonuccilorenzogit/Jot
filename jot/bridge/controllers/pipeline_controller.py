@@ -192,8 +192,6 @@ def lesson_sources_for_item(file_info: BridgeFileItem):
         book_pages=str(file_info.get("book_pages") or ""),
         title=file_info.get("title"),
         course=file_info.get("course"),
-        audio_parts=list(file_info.get("audio_parts") or []),
-        lesson_date=file_info.get("lesson_date"),
     )
 
 
@@ -637,7 +635,6 @@ class PipelineControllerMixin:
                                 book_mode=file_info.get("book_mode"),
                                 title=file_info.get("title"),
                                 course=file_info.get("course"),
-                                lesson_date=file_info.get("lesson_date"),
                                 resume_session=file_resume_session,
                                 allow_completed_destroy=file_allow_completed_destroy,
                             )

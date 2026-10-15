@@ -108,7 +108,6 @@ export async function resolveNotesJob(
     ...(bookPath && file.notes?.bookMode ? { book_mode: file.notes.bookMode } : {}),
     ...(file.title ? { title: file.title } : {}),
     ...(file.course ? { course: file.course } : {}),
-    ...(file.lessonDate ? { lesson_date: file.lessonDate } : {}),
     ...(file.resumeSession !== undefined ? { resume_session: file.resumeSession } : {}),
     allow_completed_destroy: file.allowCompletedDestroy,
     ...(file.forceRetry ? { force_retry: true } : {}),
@@ -120,17 +119,10 @@ export async function resolveLessonDocuments(
   file: FileItem,
   api: NonNullable<Window['pywebview']>['api'],
   appendConsole: (msg: string) => void,
-): Promise<Pick<FileDescriptor, 'slides_path' | 'book_path' | 'book_pages' | 'audio_parts'> | null> {
+): Promise<Pick<FileDescriptor, 'slides_path' | 'book_path' | 'book_pages'> | null> {
   const slidesPath = String(file.lesson?.slidesPath || '').trim();
   const bookPath = String(file.lesson?.bookPath || '').trim();
-  const parts = (file.lesson?.audioParts ?? []).map(p => String(p.path || '').trim()).filter(Boolean);
-  for (const part of parts) {
-    if (!(await pathExists(api, part))) {
-      appendConsole(`❌ Seconda parte dell'audio non trovata per "${file.title || file.name}". Rimuovi la lezione dalla coda e creala di nuovo.`);
-      return null;
-    }
-  }
-  if (!slidesPath && !bookPath) return parts.length ? { audio_parts: parts } : {};
+  if (!slidesPath && !bookPath) return {};
   if (slidesPath && !(await pathExists(api, slidesPath))) {
     appendConsole(`❌ Slide non trovate per "${file.title || file.name}". Rimuovi la lezione dalla coda e creala di nuovo.`);
     return null;
@@ -142,7 +134,6 @@ export async function resolveLessonDocuments(
   return {
     ...(slidesPath ? { slides_path: slidesPath } : {}),
     ...(bookPath ? { book_path: bookPath, book_pages: String(file.lesson?.bookPages || '') } : {}),
-    ...(parts.length ? { audio_parts: parts } : {}),
   };
 }
 
@@ -216,7 +207,6 @@ export function useQueueProcessing({
       size: nextSize,
       duration: nextDuration,
       ...lessonDocs,
-      ...(file.lessonDate ? { lesson_date: file.lessonDate } : {}),
       ...(file.title ? { title: file.title } : {}),
       ...(file.course ? { course: file.course } : {}),
       ...(file.resumeSession !== undefined ? { resume_session: file.resumeSession } : {}),

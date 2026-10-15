@@ -130,34 +130,20 @@ class QuotaTests(unittest.TestCase):
         # 00:00 PDT = 07:00 UTC
         self.assertEqual(reset, datetime(2026, 10, 11, 7, 0, tzinfo=UTC))
 
-    def test_snapshot_counts_every_request_on_every_key_and_model(self):
+    def test_snapshot_counts_successful_requests(self):
         from jot.services import usage_service
 
         usage_service.reset_daily_usage_for_tests()
         try:
-            # 3 requests sent on the main key, one failed: all of them count
             for _ in range(3):
-                usage_service.record_request_attempt("AIza-main", "gemini-2.5-flash")
-            usage_service.record_request_success("AIza-main", "gemini-2.5-flash")
-            snap = lp.quota_snapshot("gemini-2.5-flash", primary_key="AIza-main")
-            self.assertEqual(
-                (snap["used"], snap["limit"], snap["remaining"]), (3, 20, 17)
-            )
-            self.assertFalse(snap["exhausted"])
-            # two keys x two models = four pairs of 20
-            snap = lp.quota_snapshot(
-                "gemini-2.5-flash",
-                ["AIza-reserve"],
-                ["gemini-3.6-flash"],
-                primary_key="AIza-main",
-            )
-            self.assertEqual(
-                (snap["used"], snap["limit"], snap["remaining"]), (3, 80, 77)
-            )
-            self.assertEqual(snap["keys"], 2)
-            self.assertEqual(
-                [(m["model"], m["remaining"]) for m in snap["per_model"]],
-                [("gemini-2.5-flash", 37), ("gemini-3.6-flash", 40)],
+                usage_service.record_request_success("AIza-test", "gemini-2.5-flash")
+            snap = lp.quota_snapshot("gemini-2.5-flash")
+            self.assertEqual(snap["used"], 3)
+            self.assertEqual(snap["limit"], 20)
+            self.assertEqual(snap["remaining"], 17)
+            self.assertFalse(snap["has_reserve"])
+            self.assertTrue(
+                lp.quota_snapshot("gemini-2.5-flash", ["k2"])["has_reserve"]
             )
         finally:
             usage_service.reset_daily_usage_for_tests()

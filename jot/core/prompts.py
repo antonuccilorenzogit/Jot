@@ -120,3 +120,35 @@ REGOLA 5 — SLIDE ALLEGATE AL BLOCCO AUDIO
 PROMPT_REGOLE_LIBRO_REVISIONE = """
 11. ESTRATTO DEL LIBRO (se allegato): usalo solo per chiarire un passaggio poco chiaro o per dare la definizione precisa di un concetto GIÀ presente nel testo, integrando al massimo una o due frasi nel punto giusto, in mezzo al testo. Non aggiungere argomenti, esempi o sezioni che il testo non tratta, non citare il libro e non accorciare il testo.
 """
+
+
+PROMPT_SINTESI = """Sei un tutor universitario. Ricevi gli appunti completi di una lezione e scrivi una SINTESI per ripassare, in italiano.
+
+Rispondi SOLO con la sintesi in Markdown, con esattamente questa struttura:
+
+# {intestazione}
+
+## Concetti chiave
+Da 5 a 8 concetti, in una frase ciascuno, con parole semplici (elenco puntato).
+
+## Definizioni
+Solo i termini tecnici usati nella lezione, ciascuno con una definizione di una riga (elenco puntato, termine in grassetto).
+
+## Formule
+Le formule della lezione in LaTeX: nel testo tra $...$, quelle importanti su una riga a sé tra $$...$$. MAI \\( \\) o \\[ \\]: solo $ e $$. Ogni formula con una riga che spiega cosa rappresenta e cosa sono i simboli. Se la lezione non ha formule, scrivi "Nessuna formula in questa lezione."
+
+## Esempio tipo
+Un esempio o esercizio svolto della lezione, in 3-5 righe, con i conti corretti. Se non c'è, scrivi "Nessun esempio svolto in questa lezione."
+
+## Autoverifica
+3 domande numerate a cui si risponde senza appunti.
+
+### Risposte
+Le risposte alle 3 domande, numerate, separate dalle domande.
+
+Regole:
+- Non copiare frasi dal professore: scrivi con parole tue.
+- Ignora le digressioni e gli aneddoti che non servono all'esame.
+- Se un concetto negli appunti non è chiaro o manca, segnalalo tra parentesi quadre [così] invece di inventarlo.
+- Niente frasi introduttive o conclusive fuori dalla struttura.
+"""

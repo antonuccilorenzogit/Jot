@@ -121,13 +121,10 @@ export const ProgressDial = memo(function ProgressDial({ total, done, active, to
 export interface QuotaDialProps {
   used: number;
   limit: number;
-  /** requests still available today (all keys and models) */
-  remaining?: number;
   label?: string;
 }
 
-export const QuotaDial = memo(function QuotaDial({ used, limit, remaining, label }: QuotaDialProps) {
-  const caption = label ?? (remaining != null ? `Richieste · restano ${remaining}` : 'Richieste');
+export const QuotaDial = memo(function QuotaDial({ used, limit, label = 'Richieste' }: QuotaDialProps) {
   const safeLimit = Math.max(1, limit);
   const shown = Math.max(0, Math.min(used, safeLimit));
   const circ = 2 * Math.PI * 46;
@@ -156,7 +153,7 @@ export const QuotaDial = memo(function QuotaDial({ used, limit, remaining, label
           <span className="quota-dial-limit">/{limit}</span>
         </span>
       </div>
-      <span className="quota-dial-label">{caption}</span>
+      <span className="quota-dial-label">{label}</span>
     </div>
   );
 });

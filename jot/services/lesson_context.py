@@ -357,16 +357,8 @@ class LessonSources:
     book_pages: str = ""
     title: str | None = None
     course: str | None = None
-    # Further recordings of the same lesson, merged after the main audio.
-    audio_parts: list[str] = field(default_factory=list)
-    # Day of the lesson (YYYY-MM-DD): names the files in the course folder.
-    lesson_date: str | None = None
 
     def __post_init__(self) -> None:
-        self.audio_parts = [
-            str(p).strip() for p in (self.audio_parts or []) if str(p or "").strip()
-        ]
-        self.lesson_date = str(self.lesson_date or "").strip()[:10] or None
         self.slides_path = str(self.slides_path or "").strip() or None
         self.book_path = str(self.book_path or "").strip() or None
         self.book_pages = str(self.book_pages or "").replace(" ", "")
@@ -381,16 +373,11 @@ class LessonSources:
     def has_documents(self) -> bool:
         return bool(self.slides_path or self.book_path)
 
-    @property
-    def needs_own_session(self) -> bool:
-        return self.has_documents or bool(self.audio_parts)
-
     def to_session(self) -> dict[str, Any]:
         return {
             "slides_path": self.slides_path,
             "book_path": self.book_path,
             "book_pages": self.book_pages,
-            "audio_parts": list(self.audio_parts),
         }
 
 
@@ -401,7 +388,7 @@ def lesson_session_dir(audio_path: str, sources: LessonSources) -> str | None:
     resume as before. Adding slides or a book is a different job and gets
     its own folder.
     """
-    if not sources.needs_own_session:
+    if not sources.has_documents:
         return None
     import hashlib
     import json
@@ -411,7 +398,7 @@ def lesson_session_dir(audio_path: str, sources: LessonSources) -> str | None:
         get_session_root,
     )
 
-    blob: dict[str, object] = {
+    blob = {
         "kind": "lesson",
         "audio": _session_id_for_file(audio_path),
         "slides": _session_id_for_file(sources.slides_path)
@@ -420,8 +407,6 @@ def lesson_session_dir(audio_path: str, sources: LessonSources) -> str | None:
         "book": _session_id_for_file(sources.book_path) if sources.book_path else "",
         "book_pages": sources.book_pages,
     }
-    if sources.audio_parts:
-        blob["audio_parts"] = [_session_id_for_file(p) for p in sources.audio_parts]
     digest = hashlib.sha256(
         json.dumps(blob, sort_keys=True).encode("utf-8")
     ).hexdigest()

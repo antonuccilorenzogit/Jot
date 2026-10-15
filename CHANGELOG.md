@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0 — 2026-10-15
+
+Ritorno alla base della 1.0.0, che funzionava meglio, più sintesi automatica e formule leggibili. Dettagli in [docs/releases/v1.4.0.md](docs/releases/v1.4.0.md).
+
 ## 1.3.0 — 2026-10-13
 
 Formule di nuovo leggibili (anche nelle lezioni già fatte), sbobine rinominabili, PDF solo testo. Dettagli in [docs/releases/v1.3.0.md](docs/releases/v1.3.0.md).

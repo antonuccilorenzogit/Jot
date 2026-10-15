@@ -35,8 +35,6 @@ export type FileItem = {
   course?: string;
   /** Slides and book attached to an audio lesson. */
   lesson?: LessonJobInfo;
-  /** Day of the lesson, YYYY-MM-DD (names the files in the course folder). */
-  lessonDate?: string;
 };
 
 export type LessonJobInfo = {
@@ -47,11 +45,7 @@ export type LessonJobInfo = {
   bookName?: string;
   /** Page selection of the book, e.g. "120-165". Empty = whole book. */
   bookPages?: string;
-  /** Further recordings of the same lesson, merged after the main audio. */
-  audioParts?: AudioPart[];
 };
-
-export type AudioPart = { path: string; name: string; size: number; duration: number };
 
 export type JobKind = 'audio' | 'notes';
 
@@ -102,8 +96,6 @@ export type FileDescriptor = {
   slides_path?: string | null;
   title?: string | null;
   course?: string | null;
-  audio_parts?: string[];
-  lesson_date?: string | null;
 };
 
 export type AppStatus = 'idle' | 'processing' | 'canceling';

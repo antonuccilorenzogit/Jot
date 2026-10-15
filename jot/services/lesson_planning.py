@@ -274,57 +274,43 @@ def suggest_chapter(
 
 def next_quota_reset(now_utc: datetime | None = None) -> datetime:
     """Next midnight in Pacific time (Gemini daily quota reset), in UTC."""
-    from jot.utils.pacific_time import to_pacific
+    from zoneinfo import ZoneInfo
 
-    local = to_pacific(now_utc)
-    # midnight of the next Pacific day; the offset at that moment may differ
-    # (daylight saving), so it is resolved again for the new time
-    next_day = (local + timedelta(days=1)).date()
-    guess = datetime(
-        next_day.year, next_day.month, next_day.day, tzinfo=UTC
-    ) + timedelta(hours=8)
-    offset = to_pacific(guess).utcoffset() or timedelta(hours=-8)
-    return datetime(next_day.year, next_day.month, next_day.day, tzinfo=UTC) - offset
+    now = now_utc or datetime.now(UTC)
+    pacific = ZoneInfo("America/Los_Angeles")
+    local = now.astimezone(pacific)
+    midnight = (local + timedelta(days=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    return midnight.astimezone(UTC)
 
 
 def quota_snapshot(
     preferred_model: str,
     fallback_keys: Sequence[str] = (),
     fallback_models: Sequence[str] = (),
-    primary_key: str | None = None,
 ) -> dict[str, Any]:
-    """Requests used and left today over every key x model pair.
-
-    Google gives each project a daily quota per model, and counts every request
-    sent (also those that fail with 503): so does this. ``used`` / ``limit`` are
-    the requests sent today and the total of all pairs, ``remaining`` what is
-    left (pairs Google already refused count as empty).
-    """
+    """Requests used today and an estimate of what is left on the main key."""
     from jot.services import usage_service
 
-    keys = [k for k in [primary_key, *fallback_keys] if str(k or "").strip()]
-    models = [preferred_model, *fallback_models]
-    matrix = usage_service.request_matrix(keys, models)
-    per_model = []
-    for model in dict.fromkeys(m for m in models if str(m or "").strip()):
-        cells = [c for c in matrix["cells"] if c["model"] == model]
-        per_model.append(
-            {
-                "model": model,
-                "used": sum(c["used"] for c in cells),
-                "limit": sum(c["limit"] for c in cells),
-                "remaining": sum(c["remaining"] for c in cells),
-            }
-        )
+    usage = usage_service.get_daily_usage(
+        primary_key=None,
+        primary_model=preferred_model,
+        fallback_models=list(fallback_models),
+    )
+    telemetry = usage.get("telemetry") or {}
+    used = int(telemetry.get("responses_succeeded", 0) or 0)
+    limit = int(usage_service.get_limit_for_model(preferred_model))
+    limits = usage.get("project_limits") or {}
+    state = str((limits.get(preferred_model) or {}).get("quota_state") or "normal")
+    remaining = 0 if state == "rpd_exhausted" else max(0, limit - used)
+    extra_keys = len([k for k in fallback_keys if str(k or "").strip()])
     return {
-        "used": int(matrix["used"]),
-        "limit": int(matrix["capacity"]),
-        "remaining": int(matrix["remaining"]),
-        "exhausted": bool(keys) and matrix["remaining"] <= 0,
-        # the remaining requests already include every reserve key and model
-        "has_reserve": False,
-        "keys": len(dict.fromkeys(str(k).strip() for k in keys)),
-        "per_model": per_model,
+        "used": used,
+        "limit": limit,
+        "remaining": remaining,
+        "exhausted": state == "rpd_exhausted",
+        "has_reserve": bool(extra_keys or list(fallback_models)),
         "reset_at": next_quota_reset().isoformat(),
     }
 

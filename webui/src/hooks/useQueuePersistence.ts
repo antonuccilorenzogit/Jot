@@ -27,7 +27,6 @@ export function serializeQueueFile(file: FileItem): Record<string, unknown> {
     ...(file.title ? { title: file.title } : {}),
     ...(file.course ? { course: file.course } : {}),
     ...(file.lesson ? { lesson: file.lesson } : {}),
-    ...(file.lessonDate ? { lessonDate: file.lessonDate } : {}),
   };
 }
 
@@ -41,14 +40,8 @@ function restoreLesson(lesson: FileItem['lesson']): FileItem['lesson'] | undefin
     bookPath: text(lesson.bookPath),
     bookName: text(lesson.bookName),
     bookPages: text(lesson.bookPages),
-    audioParts: Array.isArray(lesson.audioParts)
-      ? lesson.audioParts
-          .filter(p => p && p.path)
-          .map(p => ({ path: String(p.path), name: String(p.name || ''), size: Number(p.size || 0), duration: Number(p.duration || 0) }))
-      : undefined,
   };
-  if (restored.audioParts && restored.audioParts.length === 0) delete restored.audioParts;
-  return restored.slidesPath || restored.bookPath || restored.audioParts ? restored : undefined;
+  return restored.slidesPath || restored.bookPath ? restored : undefined;
 }
 
 export function deserializeQueueFile(file: Partial<FileItem>, index: number): FileItem {
@@ -90,7 +83,6 @@ export function deserializeQueueFile(file: Partial<FileItem>, index: number): Fi
     ...(file.title ? { title: String(file.title) } : {}),
     ...(file.course ? { course: String(file.course) } : {}),
     ...(restoreLesson(file.lesson) ? { lesson: restoreLesson(file.lesson) } : {}),
-    ...(file.lessonDate ? { lessonDate: String(file.lessonDate).slice(0, 10) } : {}),
   };
 }
 

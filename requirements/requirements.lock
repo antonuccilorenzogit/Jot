@@ -8,12 +8,10 @@ certifi==2026.2.25
 google-genai==1.73.1
 imageio-ffmpeg==0.6.0
 markdown==3.10.2
-latex2mathml==3.81.1
 keyring==25.6.0
 pywebview==5.4
 plyer==2.1.0
 nh3==0.2.21
-tzdata==2026.5; sys_platform == 'win32'
 pyinstaller==6.19.0
 pypdf==6.20.0
 python-pptx==1.0.2

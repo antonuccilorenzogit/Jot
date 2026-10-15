@@ -80,34 +80,14 @@ _RATE_LIMIT_SLEEP_SECONDS: float = 65.0
 _NEW_API_KEY_TIMEOUT_SECONDS: float = 600.0
 
 
-# Longest wait for one request (upload, transcription of a 15-minute block,
-# revision). Without a limit a connection that stalls half-way (Wi-Fi change,
-# PC waking up, a hiccup on Google's side) leaves the lesson stuck on the same
-# block forever; with it the request fails as a timeout and the usual retry
-# and model-fallback logic takes over. Overridable with JOT_REQUEST_TIMEOUT_S.
-_DEFAULT_REQUEST_TIMEOUT_SECONDS: int = 480
-
-
-def request_timeout_ms() -> int:
-    raw = os.environ.get("JOT_REQUEST_TIMEOUT_S", "")
-    try:
-        seconds = int(float(raw)) if raw.strip() else _DEFAULT_REQUEST_TIMEOUT_SECONDS
-    except ValueError:
-        seconds = _DEFAULT_REQUEST_TIMEOUT_SECONDS
-    return max(30, min(seconds, 3600)) * 1000
-
-
 def create_gemini_client(api_key: str) -> genai.Client:
     """Instantiate a Google GenAI Client with SDK-level retries explicitly disabled.
 
     generation_service is the sole retry authority to guarantee deterministic timings
-    and exact telemetry counting. Every request has a time limit (see above).
+    and exact telemetry counting.
     """
     cleaned_key = str(api_key or "").strip()
-    http_opts = types.HttpOptions(
-        retry_options=types.HttpRetryOptions(attempts=1),
-        timeout=request_timeout_ms(),
-    )
+    http_opts = types.HttpOptions(retry_options=types.HttpRetryOptions(attempts=1))
     return genai.Client(api_key=cleaned_key, http_options=http_opts)
 
 
@@ -257,193 +237,6 @@ def get_governor() -> AdaptiveGovernor:
 def reset_global_governor() -> None:
     """Reset the global AdaptiveGovernor instance state."""
     _GLOBAL_GOVERNOR.reset()
-    reset_model_overload()
-
-
-# ---------------------------------------------------------------------------
-# Which model and which key for the next request
-# ---------------------------------------------------------------------------
-# A model that answers 503 (overloaded) is put on hold for a while: the next
-# requests go straight to the next model of the chain instead of being retried
-# on it (every retry costs a request of the daily quota). When the pause is
-# over, the better model is tried again with a single request.
-MODEL_OVERLOAD_PAUSE_SECONDS: float = 20 * 60
-_model_overloaded_until: dict[str, float] = {}
-_model_back_from_pause: set[str] = set()
-_overload_lock = threading.Lock()
-
-
-def mark_model_overloaded(model: str, seconds: float | None = None) -> None:
-    with _overload_lock:
-        _model_overloaded_until[str(model)] = time.monotonic() + (
-            MODEL_OVERLOAD_PAUSE_SECONDS if seconds is None else seconds
-        )
-
-
-def model_overloaded(model: str) -> bool:
-    with _overload_lock:
-        until = _model_overloaded_until.get(str(model))
-        if until is None:
-            return False
-        if time.monotonic() >= until:
-            _model_overloaded_until.pop(str(model), None)
-            _model_back_from_pause.add(str(model))
-            return False
-        return True
-
-
-def _take_back_from_pause(model: str) -> bool:
-    """True once when ``model`` has just finished its pause (worth one new try)."""
-    model_overloaded(model)
-    with _overload_lock:
-        if str(model) in _model_back_from_pause:
-            _model_back_from_pause.discard(str(model))
-            return True
-        return False
-
-
-def reset_model_overload() -> None:
-    with _overload_lock:
-        _model_overloaded_until.clear()
-        _model_back_from_pause.clear()
-
-
-def configured_keys() -> list[str]:
-    """Main key first, then the reserve keys, as set in the settings."""
-    try:
-        cfg = load_config()
-    except Exception:
-        return []
-    keys: list[str] = []
-    for key in [cfg.get("api_key"), *(cfg.get("fallback_keys") or [])]:
-        cleaned = str(key or "").strip()
-        if cleaned and cleaned not in keys:
-            keys.append(cleaned)
-    return keys
-
-
-def _key_with_quota(model: str, current_key: str, keys: list[str]) -> str | None:
-    """The key to use for ``model``: the current one while it has requests left,
-    then the others in order. A pair Google refused for quota is skipped; a pair
-    that is full only by the local count is kept as a last resort."""
-    last_resort = None
-    for key in [current_key, *[k for k in keys if k != current_key]]:
-        remaining, refused = usage_service.remaining_for(key, model)
-        if refused:
-            continue
-        if remaining > 0:
-            return key
-        last_resort = last_resort or key
-    return last_resort
-
-
-def select_route(
-    client,
-    model_state: ModelState | None,
-    *,
-    on_model_switched=None,
-    on_key_rotated=None,
-    runtime=None,
-):
-    """Best model of the chain that is not on hold, with a key that still has
-    requests for it. Returns the client to use (a new one when the key changes).
-    With every model on hold, nothing changes: the normal retry logic decides."""
-    if model_state is None:
-        return client
-    current_key = extract_client_api_key(client) or ""
-    keys = configured_keys()
-    use_keys = bool(current_key) and current_key in keys
-
-    def usable(model: str) -> str | None:
-        if model_overloaded(model):
-            return None
-        if not use_keys:
-            return current_key or "-"
-        return _key_with_quota(model, current_key, keys)
-
-    chain = list(model_state.chain)
-    current = model_state.current
-    position = chain.index(current) if current in chain else len(chain)
-    chosen: tuple[str, str] | None = None
-    # a better model whose pause has just ended gets one new try
-    for model in chain[:position]:
-        if _take_back_from_pause(model):
-            key = usable(model)
-            if key:
-                chosen = (model, key)
-                break
-    if chosen is None:
-        key = usable(current)
-        if key:
-            chosen = (current, key)
-    if chosen is None:
-        # current model on hold or out of requests: the best one that can take over
-        for model in chain:
-            key = usable(model)
-            if key:
-                chosen = (model, key)
-                break
-    if chosen is None:
-        return client
-    model, key = chosen
-    if key == "-":
-        key = current_key
-    if model != model_state.current:
-        old = model_state.current
-        model_state.current = model
-        print(f"      [Modello] {old} -> {model}")
-        if on_model_switched is not None:
-            on_model_switched(old, model)
-    if use_keys and key and key != current_key:
-        client = create_gemini_client(key)
-        print(f"      [Chiave] passo a {usage_service.mask_key(key)} per {model}")
-        if runtime is not None and hasattr(runtime, "set_effective_api_key"):
-            runtime.set_effective_api_key(key)
-        if on_key_rotated is not None:
-            on_key_rotated(client)
-    return client
-
-
-def _ready_to_send(cancelled, gov, runtime) -> bool:
-    """False when the user stopped the work (also while waiting for the governor)."""
-    if cancelled():
-        return False
-    if not gov.wait_if_needed(cancelled, runtime=runtime):
-        print("   [*] Operazione annullata dall'utente.")
-        return False
-    return True
-
-
-def _move_off_overloaded_model(
-    client,
-    model_state: ModelState | None,
-    current_model: str,
-    *,
-    on_model_switched=None,
-    on_key_rotated=None,
-    runtime=None,
-    applies: bool = True,
-):
-    """First 503 on a model: put it on hold and continue at once on the next one.
-    Returns the new client, or None when no other model can take over."""
-    if not applies or model_state is None or len(model_state.chain) < 2:
-        return None
-    mark_model_overloaded(current_model)
-    new_client = select_route(
-        client,
-        model_state,
-        on_model_switched=on_model_switched,
-        on_key_rotated=on_key_rotated,
-        runtime=runtime,
-    )
-    if model_state.current == current_model:
-        return None
-    usage_service.record_retry_event("503")
-    print(
-        f"      [Modello {current_model} sovraccarico (503): in pausa per"
-        f" {int(MODEL_OVERLOAD_PAUSE_SECONDS // 60)} minuti, continuo con {model_state.current}]"
-    )
-    return new_client
 
 
 def current_model_name(model_state: ModelState | None, default_model: str) -> str:
@@ -847,19 +640,6 @@ def _retry_on_quota(
         print("   [*] Operazione annullata dall'utente.")
         return False, client
 
-    # another key with requests left for this model, or the next model with any key
-    routed = select_route(
-        client,
-        model_state,
-        on_model_switched=on_model_switched,
-        on_key_rotated=on_key_rotated,
-        runtime=runtime,
-    )
-    if routed is not client or (
-        model_state is not None and model_state.current != current_model
-    ):
-        return True, routed
-
     new_c, rotated, rotated_key = try_rotate_key(
         client,
         fallback_keys,
@@ -1024,10 +804,6 @@ def _check_deterministic_client_error(
         raise exc
 
 
-class _SwitchedModel(Exception):
-    """Internal signal: the current model stayed overloaded, the next one in the chain is now active."""
-
-
 def _handle_transient_capacity(
     callable_fn,
     client,
@@ -1072,21 +848,6 @@ def _handle_transient_capacity(
             return False, client, None, other_exc
 
     actual_max_attempts = len(delays) + 1
-    # the model is still overloaded after every retry: move to the next model of the
-    # chain (the fallbacks chosen in the settings) instead of failing the lesson
-    if model_state is not None and next_model_in_chain(model_state):
-        print(
-            f"      [Modello {current_model} ancora sovraccarico dopo {actual_max_attempts} tentativi."
-            " Passo al modello di riserva...]"
-        )
-        _switch_to_next_model(
-            model_state,
-            on_model_switched=on_model_switched,
-            error_message="Server Gemini indisponibile.",
-            cause=other_exc or exc,
-        )
-        gov.on_success()  # the new model starts with a clean slate
-        return False, client, None, _SwitchedModel(current_model)
     gov.state = "exhausted"
     if runtime is not None and hasattr(runtime, "retry_state"):
         runtime.retry_state(gov.get_state_payload())
@@ -1110,8 +871,6 @@ def _process_transient_capacity_fallback(
     on_model_switched,
 ) -> tuple[bool, Exception, str, int | None, bool]:
     """Returns (model_switched, exc, error, error_code, is_quota_related)."""
-    if isinstance(other_exc, _SwitchedModel):  # already moved to the next model
-        return True, other_exc, "", None, False
     error = _error_text(other_exc)
     error_code = _error_code(other_exc)
     is_quota_related = _is_quota_related(error, error_code)
@@ -1207,16 +966,11 @@ def retry_with_quota(
 
     attempts = 0
     while attempts < max_attempts:
-        if not _ready_to_send(cancelled, gov, runtime):
+        if cancelled():
             return client, None
-        # best model not on hold, with a key that still has requests for it
-        client = select_route(
-            client,
-            model_state,
-            on_model_switched=on_model_switched,
-            on_key_rotated=on_key_rotated,
-            runtime=runtime,
-        )
+        if not gov.wait_if_needed(cancelled, runtime=runtime):
+            print("   [*] Operazione annullata dall'utente.")
+            return client, None
 
         current_model = current_model_name(model_state, model_name)
         cur_key = extract_client_api_key(client) or ""
@@ -1271,25 +1025,10 @@ def retry_with_quota(
                 continue
 
             # 4. Transient capacity & server errors (503, 500, 502, 504, 408, Timeout)
-            is_capacity = not is_quota_related and (
+            if not is_quota_related and (
                 _is_model_unavailable(error, error_code)
                 or _is_transient_capacity_or_server_error(error, error_code, exc)
-            )
-            # first overload on a model: no retries on it, the next model takes over at once
-            moved = _move_off_overloaded_model(
-                client,
-                model_state,
-                current_model,
-                on_model_switched=on_model_switched,
-                on_key_rotated=on_key_rotated,
-                runtime=runtime,
-                applies=is_capacity,
-            )
-            if moved is not None:
-                client = moved
-                attempts = 0
-                continue
-            if is_capacity:
+            ):
                 done, client, result, other_exc = _handle_transient_capacity(
                     callable_fn,
                     client,

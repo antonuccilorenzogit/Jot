@@ -75,8 +75,8 @@ describe('LessonComposer', () => {
     expect(api.suggest_lesson).toHaveBeenCalledWith(audio.path, slides.path, book.path);
     expect(screen.getByText('2:28')).toBeTruthy();
     expect((screen.getByLabelText('Nome della lezione') as HTMLInputElement).value).toBe('Reti lezione 5');
-    // 2h28 = 11 blocks + 4 revisions + 1 sintesi
-    expect(screen.getByText('Questa lezione: circa 16 richieste')).toBeTruthy();
+    // 2h28 = 11 blocks + 4 revisions
+    expect(screen.getByText('Circa 15 richieste su 20 oggi')).toBeTruthy();
 
     // the suggested chapter is applied at once and can still be changed
     expect((screen.getByLabelText('Pagine del libro') as HTMLInputElement).value).toBe('97-176');
@@ -103,55 +103,12 @@ describe('LessonComposer', () => {
     expect(screen.getByRole('button', { name: 'Aggiungi audio' })).toBeTruthy();
   });
 
-  it('joins two recordings into one lesson with its date', async () => {
-    const second = { id: 'a2', name: 'Reti_parte_2.m4a', size: 500, duration: 40 * 60, path: 'C:\\Reti_parte_2.m4a' };
-    const api = mockApi({ suggest_lesson: vi.fn(async () => ({ ok: true, title: null, chapter: null })) });
-    const { onStart } = setup();
-    await click('Aggiungi audio');
-    api.ask_media_file.mockResolvedValueOnce(second);
-    await click('+ Seconda parte');
-    expect(screen.getByText('+ Reti_parte_2.m4a')).toBeTruthy();
-    // 2:28 + 0:40
-    expect(screen.getByText('3:08')).toBeTruthy();
-    expect((screen.getByLabelText('Data della lezione') as HTMLInputElement).value).toBe('2026-10-10');
-    fireEvent.change(screen.getByLabelText('Data della lezione'), { target: { value: '2026-10-08' } });
-    expect(screen.getByText(/Documenti › jot › Senza corso/)).toBeTruthy();
-
-    await click('Avvia');
-    const job = onStart.mock.calls[0][0];
-    expect(job.lessonDate).toBe('2026-10-08');
-    expect(job.duration).toBe(audio.duration + second.duration);
-    expect(job.lesson?.audioParts).toEqual([
-      { path: second.path, name: second.name, size: second.size, duration: second.duration },
-    ]);
-  });
-
-  it('a second part can be removed', async () => {
-    const second = { id: 'a2', name: 'Reti_parte_2.m4a', size: 500, duration: 60, path: 'C:\\Reti_parte_2.m4a' };
-    const api = mockApi({ suggest_lesson: vi.fn(async () => ({ ok: true, title: null, chapter: null })) });
-    setup();
-    await click('Aggiungi audio');
-    api.ask_media_file.mockResolvedValueOnce(second);
-    await click('+ Seconda parte');
-    await click('Rimuovi parte 2');
-    expect(screen.queryByText('+ Reti_parte_2.m4a')).toBeNull();
-    expect(screen.getByText('2:28')).toBeTruthy();
-  });
-
   it('slides alone become a notes job', async () => {
     mockApi({ suggest_lesson: vi.fn(async () => ({ ok: true, title: null, chapter: null })) });
     const { onStart } = setup();
     await click('Aggiungi slide');
     await click('Avvia');
     expect(onStart.mock.calls[0][0]).toMatchObject({ kind: 'notes', path: slides.path });
-  });
-
-  it('shows the requests of this lesson and what is left today over every key and model', async () => {
-    mockApi();
-    const quota: QuotaSnapshot = { used: 36, limit: 240, remaining: 204, exhausted: false, has_reserve: false, reset_at: '2026-10-11T07:00:00Z' };
-    setup({ quota });
-    await click('Aggiungi audio');
-    expect(screen.getByText('Questa lezione: circa 16 richieste · oggi ne restano 204 su 240')).toBeTruthy();
   });
 
   it('warns when today\'s quota is not enough', async () => {

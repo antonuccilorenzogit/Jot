@@ -251,16 +251,23 @@ def initialize_session_context(
                     "macro_char_limit"
                 ]
             else:
-                # Work already done: the block length stays (the saved blocks must keep
-                # lining up), but the models are the ones chosen now in the settings,
-                # so changing model also applies to a lesson that is resumed.
-                session["settings"]["model"] = current_defaults["model"]
-                session["settings"]["fallback_models"] = current_defaults[
-                    "fallback_models"
-                ]
-                session["settings"]["effective_model"] = current_defaults[
-                    "effective_model"
-                ]
+                # Preserve session-specific models if already configured
+                if (
+                    "model" not in session["settings"]
+                    or not session["settings"]["model"]
+                ):
+                    session["settings"]["model"] = current_defaults["model"]
+                if "fallback_models" not in session["settings"]:
+                    session["settings"]["fallback_models"] = current_defaults[
+                        "fallback_models"
+                    ]
+                if (
+                    "effective_model" not in session["settings"]
+                    or not session["settings"]["effective_model"]
+                ):
+                    session["settings"]["effective_model"] = current_defaults[
+                        "effective_model"
+                    ]
         except Exception:
             pass
 

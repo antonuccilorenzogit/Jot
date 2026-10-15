@@ -1,12 +1,10 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AppStatus, AudioPart, FileDescriptor, FileItem } from '../../appState';
+import type { AppStatus, FileDescriptor, FileItem } from '../../appState';
 import type { DocumentDescriptor, LessonSuggestion, QuotaSnapshot } from '../../bridge';
 import { MAX_BOOK_PAGES, parsePageSelection } from '../../notesJob';
 import {
   buildLessonJob,
   estimateLessonRequests,
-  todayIso,
-  totalAudioSeconds,
   formatClock,
   isBusyHour,
   lessonMode,
@@ -72,8 +70,6 @@ export const LessonComposer = memo(function LessonComposer({
   now = () => new Date(),
 }: LessonComposerProps) {
   const [audio, setAudio] = useState<FileDescriptor | null>(null);
-  const [parts, setParts] = useState<AudioPart[]>([]);
-  const [lessonDate, setLessonDate] = useState(() => todayIso(now()));
   const [slides, setSlides] = useState<DocumentDescriptor | null>(null);
   const [book, setBook] = useState<DocumentDescriptor | null>(null);
   const [bookPages, setBookPages] = useState('');
@@ -87,7 +83,7 @@ export const LessonComposer = memo(function LessonComposer({
   const [error, setError] = useState<string | null>(null);
   const suggestSeq = useRef(0);
 
-  const sources = useMemo(() => ({ audio, slides, book, parts }), [audio, slides, book, parts]);
+  const sources = useMemo(() => ({ audio, slides, book }), [audio, slides, book]);
   const mode = lessonMode(sources);
   const hasAny = Boolean(audio || slides || book);
 
@@ -109,26 +105,6 @@ export const LessonComposer = memo(function LessonComposer({
       })
       .catch(() => {});
   }, [audio?.path, slides?.path, book?.path, hasAny, titleTouched, pagesTouched]);
-
-  /** Second (third...) recording of the same lesson: one set of notes at the end. */
-  const addPart = useCallback(async () => {
-    const api = window.pywebview?.api;
-    if (!api?.ask_media_file) return;
-    setError(null);
-    setPicking('audio');
-    try {
-      const file = await api.ask_media_file();
-      if (file?.path) {
-        setParts(prev => (prev.some(p => p.path === file.path) || file.path === audio?.path
-          ? prev
-          : [...prev, { path: file.path as string, name: file.name, size: file.size, duration: Number(file.duration || 0) }]));
-      }
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setPicking(null);
-    }
-  }, [audio?.path]);
 
   const pick = useCallback(async (kind: 'audio' | 'slides' | 'book') => {
     const api = window.pywebview?.api;
@@ -169,15 +145,15 @@ export const LessonComposer = memo(function LessonComposer({
 
   const requests = estimateLessonRequests(sources);
   const job = useMemo(
-    () => buildLessonJob(sources, { bookPages, title, course, lessonDate }),
-    [sources, bookPages, title, course, lessonDate],
+    () => buildLessonJob(sources, { bookPages, title, course }),
+    [sources, bookPages, title, course],
   );
   const alreadyQueued = job ? queuedIds.has(job.id) : false;
   const isBusy = appState === 'processing' || appState === 'canceling';
   const canStart = Boolean(job) && !bookError && !alreadyQueued && apiReady && picking === null && appState !== 'canceling' && !scheduled;
 
   const reset = useCallback(() => {
-    setAudio(null); setParts([]); setSlides(null); setBook(null); setBookPages('');
+    setAudio(null); setSlides(null); setBook(null); setBookPages('');
     setTitle(''); setTitleTouched(false); setChapter(null); setChapterApplied(false); setPagesTouched(false); setError(null);
   }, []);
 
@@ -205,13 +181,11 @@ export const LessonComposer = memo(function LessonComposer({
     summary = quota.remaining > 0
       ? `Circa ${requests} richieste: oggi ne restano ${quota.remaining}. Il resto riparte da solo ${describeReset(quota.reset_at)}, con l’app aperta.`
       : `Quota di oggi finita: parte da sola ${describeReset(quota.reset_at)}, con l’app aperta.`;
-  } else if (quota) {
-    summary = `Questa lezione: circa ${requests} ${requests === 1 ? 'richiesta' : 'richieste'} · oggi ne restano ${quota.remaining} su ${quota.limit}`;
   } else {
-    summary = `Questa lezione: circa ${requests} ${requests === 1 ? 'richiesta' : 'richieste'}`;
+    summary = `Circa ${requests} ${requests === 1 ? 'richiesta' : 'richieste'} su ${quota?.limit ?? 20} oggi`;
   }
 
-  const audioFace = audio ? audioClock(totalAudioSeconds(sources)) : null;
+  const audioFace = audio ? audioClock(Number(audio.duration || 0)) : null;
   const bookFace = book ? bookRangeLabel(bookPages, book.pages) : null;
   const sourcesReady = mode === 'audio' || mode === 'notes';
 
@@ -223,7 +197,7 @@ export const LessonComposer = memo(function LessonComposer({
         <div className="lesson-source">
           <SourceDial
             label="Audio"
-            ariaLabel={audio ? `Audio: ${audio.name}${parts.length ? ` e altre ${parts.length} parti` : ''}. Clicca per cambiarlo` : 'Aggiungi audio'}
+            ariaLabel={audio ? `Audio: ${audio.name}. Clicca per cambiarlo` : 'Aggiungi audio'}
             filled={Boolean(audio)}
             value={audioFace?.value}
             unit={audioFace?.unit}
@@ -235,27 +209,7 @@ export const LessonComposer = memo(function LessonComposer({
           {audio ? (
             <>
               <span className="lesson-source-file" title={audio.path}>{audio.name}</span>
-              {parts.map((part, index) => (
-                <span key={part.path} className="lesson-source-part">
-                  <span className="lesson-source-file" title={part.path}>+ {part.name}</span>
-                  <button
-                    type="button"
-                    className="lesson-link is-small"
-                    aria-label={`Rimuovi parte ${index + 2}`}
-                    onClick={() => setParts(prev => prev.filter(p => p.path !== part.path))}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-              <span className="lesson-source-actions">
-                {parts.length < 3 && (
-                  <button type="button" className="lesson-link" onClick={() => void addPart()} disabled={picking !== null}>
-                    {parts.length === 0 ? '+ Seconda parte' : '+ Un’altra parte'}
-                  </button>
-                )}
-                <button type="button" className="lesson-link" onClick={() => { setAudio(null); setParts([]); }}>Rimuovi</button>
-              </span>
+              <button type="button" className="lesson-link" onClick={() => setAudio(null)}>Rimuovi</button>
             </>
           ) : <span className="lesson-source-file">Registrazione della lezione</span>}
         </div>
@@ -313,17 +267,6 @@ export const LessonComposer = memo(function LessonComposer({
               onChange={e => { setTitle(e.target.value); setTitleTouched(true); }}
               maxLength={120}
               aria-label="Nome della lezione"
-            />
-          </label>
-          <label className="lesson-field is-date">
-            <span className="lesson-field-label">Data</span>
-            <input
-              className="lesson-input"
-              type="date"
-              value={lessonDate}
-              max={todayIso(now())}
-              onChange={e => setLessonDate(e.target.value || todayIso(now()))}
-              aria-label="Data della lezione"
             />
           </label>
           <label className="lesson-field">
@@ -385,11 +328,6 @@ export const LessonComposer = memo(function LessonComposer({
           </button>
         )}
         <span className="lesson-summary" aria-live="polite">{summary}</span>
-        {sourcesReady && (
-          <span className="lesson-summary is-soft">
-            Lezione e sintesi finiranno in Documenti › jot › {course.trim() || 'Senza corso'}
-          </span>
-        )}
         {showScheduleHint && (
           <span className="lesson-summary is-soft">
             Nel pomeriggio i server di Google sono spesso carichi.{' '}

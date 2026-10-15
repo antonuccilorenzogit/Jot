@@ -432,7 +432,7 @@ class PipelineSessionHelpersTests(unittest.TestCase):
 
 
 class InitializeSessionContextTests(unittest.TestCase):
-    def test_resume_uses_the_model_chosen_now(self):
+    def test_resume_preserves_model_from_session_config(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             import json
 
@@ -489,15 +489,13 @@ class InitializeSessionContextTests(unittest.TestCase):
             ):
                 ctx = initialize_session_context(input_path, resume_session=True)
 
-            # the lesson started on 2.5; the settings now say 3.6: the rest goes on 3.6
-            self.assertEqual(ctx.settings.model, "gemini-3.6-flash")
+            self.assertEqual(ctx.settings.model, "gemini-2.5-flash")
             self.assertEqual(
                 ctx.session["settings"]["effective_model"],
-                "gemini-3.6-flash",
+                "gemini-2.5-flash",
             )
-            self.assertEqual(ctx.settings.chunk_minutes, 15)
 
-    def test_resume_uses_the_reserve_models_chosen_now(self):
+    def test_resume_preserves_empty_fallback_models(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             import json
 
@@ -554,11 +552,8 @@ class InitializeSessionContextTests(unittest.TestCase):
             ):
                 ctx = initialize_session_context(input_path, resume_session=True)
 
-            # the reserve models chosen now apply to the resumed lesson too
-            self.assertEqual(ctx.settings.fallback_models, ["gemini-2.5-flash"])
-            self.assertEqual(
-                ctx.session["settings"]["fallback_models"], ["gemini-2.5-flash"]
-            )
+            self.assertEqual(ctx.settings.fallback_models, [])
+            self.assertEqual(ctx.session["settings"]["fallback_models"], [])
 
     def _make_session_file(self, tmpdir, model, chunk_minutes, chunks_done):
         import json
@@ -644,7 +639,7 @@ class InitializeSessionContextTests(unittest.TestCase):
             self.assertEqual(ctx.settings.model, "gemini-2.5-flash")
             self.assertEqual(ctx.settings.chunk_minutes, 15)
 
-    def test_chunk_minutes_preserved_and_model_updated_when_chunks_already_done(self):
+    def test_chunk_minutes_and_model_preserved_when_chunks_already_done(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             input_path, session_dir = self._make_session_file(
                 tmpdir,
@@ -683,7 +678,7 @@ class InitializeSessionContextTests(unittest.TestCase):
             ):
                 ctx = initialize_session_context(input_path, resume_session=True)
 
-            self.assertEqual(ctx.settings.model, "gemini-2.5-flash")
+            self.assertEqual(ctx.settings.model, "gemini-3.6-flash")
             self.assertEqual(ctx.settings.chunk_minutes, 10)
 
 
