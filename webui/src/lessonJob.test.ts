@@ -25,8 +25,27 @@ describe('lessonJob', () => {
     // 2h30: 11 blocks of 14:30 + 4 revision blocks of ~22k characters
     expect(estimateAudioRequests(9000)).toEqual({ chunks: 11, revisions: 4, total: 15 });
     expect(estimateAudioRequests(0).total).toBe(0);
-    expect(estimateLessonRequests({ audio, slides, book })).toBe(15);
+    // + 1 for the sintesi
+    expect(estimateLessonRequests({ audio, slides, book })).toBe(16);
+    // a second part adds its minutes: 2h30 + 2h30 = 5h → 21 blocks + 8 revisions + sintesi
+    const part = { path: '/b.m4a', name: 'b.m4a', size: 1, duration: 9000 };
+    expect(estimateLessonRequests({ audio, slides: null, book: null, parts: [part] })).toBe(
+      estimateAudioRequests(18000).total + 1,
+    );
     expect(estimateLessonRequests({ audio: null, slides, book })).toBeGreaterThan(0);
+  });
+
+  it('joins a second audio part and keeps the lesson date', () => {
+    const part = { path: '/b.m4a', name: 'b.m4a', size: 2, duration: 1800 };
+    const job = buildLessonJob(
+      { audio, slides: null, book: null, parts: [part] },
+      { bookPages: '', title: 'Diritto', course: 'Diritto privato', lessonDate: '2026-10-12' },
+    );
+    expect(job?.id).toBe('lesson::/a.m4a::::::::+/b.m4a');
+    expect(job?.duration).toBe(10800);
+    expect(job?.size).toBe(3);
+    expect(job?.lessonDate).toBe('2026-10-12');
+    expect(job?.lesson?.audioParts).toEqual([part]);
   });
 
   it('keeps audio-only jobs identical to the classic queue', () => {

@@ -18,7 +18,7 @@ from jot.utils.html_export import build_html_document
 
 SUMMARY_MD = "sintesi.md"
 SUMMARY_HTML = "sintesi.html"
-PHASE_TEXT = "Sintesi della lezione"
+PHASE_TEXT = "Fase 3/3: sintesi"
 _TIME_MARK_RE = re.compile(r"\[\[\s*t\s*=\s*[\d:]+\s*\]\]\s*")
 
 
@@ -36,13 +36,20 @@ def lesson_markdown(phase2_revised_dir: str, fallback: str) -> str:
     return _TIME_MARK_RE.sub("", text or str(fallback or ""))
 
 
+def _lesson_day(session: dict) -> date | None:
+    try:
+        return date.fromisoformat(str(session.get("lesson_date") or "")[:10])
+    except ValueError:
+        return None
+
+
 def summary_heading(session: dict, today: date | None = None) -> str:
     title = str(session.get("custom_title") or session.get("title") or "").strip()
     if not title:
         source = (session.get("input") or {}).get("path") or ""
         title = os.path.splitext(os.path.basename(str(source)))[0]
     course = str(session.get("course") or "").strip()
-    day = (today or date.today()).strftime("%d/%m/%Y")
+    day = (today or _lesson_day(session) or date.today()).strftime("%d/%m/%Y")
     parts = [course] if course else []
     if title and title.lower() != course.lower():
         parts.append(title)

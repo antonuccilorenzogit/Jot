@@ -98,6 +98,26 @@ function getPhaseInfo(appState: AppStatus, currentPhase: string, mode: 'audio' |
     };
   }
 
+  if (phase.startsWith('Fase 3/3: sintesi')) {
+    return {
+      icon: <Sparkles className="w-8 h-8" />,
+      iconAnimation: 'pulse',
+      title: 'Sintesi',
+      description: 'Scrivo la sintesi della lezione per il ripasso.',
+      kind: 'normal',
+    };
+  }
+
+  if (phase.startsWith('Fase 0/3: unione')) {
+    return {
+      icon: <AudioLines className="w-8 h-8" />,
+      iconAnimation: 'pulse',
+      title: 'Unione degli audio',
+      description: 'Unisco le registrazioni della lezione in un unico audio.',
+      kind: 'normal',
+    };
+  }
+
   if (phase.startsWith('Fase 0/3: preparazione documenti')) {
     return {
       icon: <FileDown className="w-8 h-8" />,
@@ -199,7 +219,7 @@ function getStepperState(currentPhase: string): StepperState {
   if (phase.startsWith('Fase 1/3')) {
     return { preconversione: 'done', trascrizione: 'active', revisione: 'pending' };
   }
-  if (phase.startsWith('Fase 2/3')) {
+  if (phase.startsWith('Fase 2/3') || phase.startsWith('Fase 3/3')) {
     return { preconversione: 'done', trascrizione: 'done', revisione: 'active' };
   }
   return null;
@@ -294,6 +314,10 @@ function explainPhase(
   if (phase.startsWith('Server Gemini occupato')) return 'I server di Google sono occupati. Riprovo da solo tra pochi secondi, non devi fare nulla.';
   if (phase.includes('Rate limit')) return 'Ho raggiunto il limite di richieste al minuto. Riparto da solo tra poco.';
   if (phase.startsWith('Fase 0/3: preparazione documenti')) return 'Controllo le slide e preparo le pagine del libro.';
+  if (phase.startsWith('Fase 0/3: unione')) return 'Unisco le parti della lezione in un unico audio, così gli appunti escono in un file solo.';
+  if (phase.startsWith('Fase 3/3: sintesi')) {
+    return 'Scrivo la sintesi: concetti chiave, definizioni, formule, un esempio e tre domande di autoverifica.';
+  }
   if (phase.startsWith('Fase 0/3')) return 'Converto l’audio in un formato leggero, così ogni blocco parte più in fretta.';
   if (phase.startsWith('Fase 1/3')) {
     const chunk = phase.match(/chunk\s+(\d+)\s*\/\s*(\d+)/i);
@@ -366,6 +390,7 @@ export const ProcessingStatusBanner = memo(function ProcessingStatusBanner({
 
   const phase = phaseForMeta.trim();
   const isDone = kind === 'success';
+  const inSummary = phase.startsWith('Fase 3/3');
   const inRevision = phase.startsWith('Fase 2/3') || phase.startsWith('Fase: esportazione') || phase.startsWith('Fase:esportazione');
   const inTranscription = phase.startsWith('Fase 1/3');
   const chunkInfo = parseCurrentIndex(phase, 'chunks');
@@ -376,6 +401,9 @@ export const ProcessingStatusBanner = memo(function ProcessingStatusBanner({
   if (isDone) {
     const total = Math.max(1, workTotals.chunks || 1);
     dial = { total, done: total, active: 0, tone, overline: 'Pronti', big: '✓', caption: startedAt && elapsedSecs > 0 ? `In ${Math.max(1, Math.round(elapsedSecs / 60))} minuti` : undefined, ariaLabel: 'Elaborazione completata' };
+  } else if (inSummary) {
+    const total = Math.max(1, workTotals.macro || 1);
+    dial = { total, done: total, active: 0, tone: 'ink', overline: 'Sintesi', big: 'S', caption: 'Per il ripasso', ariaLabel: 'Sintesi della lezione' };
   } else if (inRevision) {
     const total = macroInfo?.total || workTotals.macro || 1;
     const current = macroInfo?.current || getActiveStepIndex(workDone.macro, total) || 1;

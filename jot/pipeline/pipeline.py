@@ -695,15 +695,64 @@ def _startup_checks(
     return _validate_lesson_documents(lesson, runtime)
 
 
+MERGED_AUDIO_NAME = "audio_unito.mp3"
+
+
+def _merge_audio_parts(
+    input_path: str,
+    lesson: LessonSources,
+    session_ctx: PipelineSessionContext,
+    session: dict,
+    save_session,
+    runtime: PipelineRuntime,
+) -> str:
+    """Two (or more) recordings of one lesson become a single audio file.
+
+    The merged file lives in the session folder: it is what the notes are
+    made from and what the player plays back. Returns the path to use.
+    """
+    if not lesson.audio_parts:
+        return input_path
+    from jot.core.session_store import _file_fingerprint
+    from jot.utils.ffmpeg_utils import concat_audio_to_mp3
+
+    merged = os.path.join(session_ctx.session_dir, MERGED_AUDIO_NAME)
+    if os.path.normcase(os.path.abspath(input_path)) == os.path.normcase(
+        os.path.abspath(merged)
+    ):
+        raise RuntimeError("Percorso dell'audio principale non valido.")
+    if not (os.path.isfile(merged) and os.path.getsize(merged) > 1024):
+        parts = [input_path, *lesson.audio_parts]
+        missing = [p for p in parts if not os.path.isfile(p)]
+        if missing:
+            raise RuntimeError(f"Audio non trovato: {os.path.basename(missing[0])}")
+        runtime.phase("Fase 0/3: unione degli audio")
+        print(f"[*] Unisco {len(parts)} registrazioni in un unico audio...")
+        ok, reason = concat_audio_to_mp3(
+            input_paths=parts,
+            output_path=merged,
+            ffmpeg_exe=resolve_ffmpeg(),
+            stop_event=runtime.cancel_event,
+        )
+        if not ok:
+            raise RuntimeError(f"Unione degli audio non riuscita: {reason}")
+        print("[OK] Audio unito.")
+    session["input"] = _file_fingerprint(merged)
+    save_session()
+    return merged
+
+
 def _apply_lesson_metadata(session: dict, lesson: LessonSources) -> None:
     """Remember the lesson sources, title and course in the session."""
-    if lesson.has_documents:
+    if lesson.needs_own_session:
         session["lesson"] = lesson.to_session()
     if lesson.title:
         session["title"] = lesson.title
         session["custom_title"] = lesson.title
     if lesson.course:
         session["course"] = lesson.course
+    if lesson.lesson_date:
+        session["lesson_date"] = lesson.lesson_date
 
 
 def _build_slide_tracker(
@@ -821,6 +870,10 @@ def _esegui_sbobinatura_impl(
         model_state = build_model_state(settings.model, settings.fallback_models)
         runtime.update_model(model_state.current)
 
+        source_path = input_path  # the first recording, before any merge
+        input_path = _merge_audio_parts(
+            input_path, lesson, session_ctx, session, save_session, runtime
+        )
         total_duration_sec, ffmpeg_exe = _probe_input_media(input_path, runtime, logger)
         if total_duration_sec is None or ffmpeg_exe is None:
             return
@@ -867,6 +920,13 @@ def _esegui_sbobinatura_impl(
                     settings.model, settings.fallback_models
                 )
                 runtime.update_model(model_state.current)
+                # starting over wipes the session folder, merged audio included:
+                # keep the lesson sources and rebuild the audio before going on
+                _apply_lesson_metadata(session, lesson)
+                session_ctx.save()
+                input_path = _merge_audio_parts(
+                    source_path, lesson, session_ctx, session, save_session, runtime
+                )
 
         if runtime.cancelled():
             return
@@ -1018,7 +1078,7 @@ def esegui_sbobinatura(
 ):
     # Wrapper stabile: mantiene la firma pubblica mentre l'implementazione evolve.
     lesson = LessonSources.ensure(lesson)
-    if not session_dir_hint and lesson.has_documents:
+    if not session_dir_hint and lesson.needs_own_session:
         session_dir_hint = lesson_session_dir(input_path, lesson)
     return _esegui_sbobinatura_impl(
         input_path,

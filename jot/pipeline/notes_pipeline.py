@@ -102,6 +102,9 @@ def _apply_notes_metadata(session: dict, meta: dict) -> None:
     merged = dict(meta)
     title = str(merged.pop("title", "") or "").strip()
     course = str(merged.pop("course", "") or "").strip()
+    lesson_date = str(merged.pop("lesson_date", "") or "").strip()
+    if lesson_date:
+        session["lesson_date"] = lesson_date[:10]
     if title:
         session["title"] = title
         session["custom_title"] = title
@@ -399,6 +402,7 @@ def _esegui_appunti_impl(
     book_mode: str | None = None,
     title: str | None = None,
     course: str | None = None,
+    lesson_date: str | None = None,
 ):
     runtime = PipelineRuntime(app_instance)
     runtime.reset_temp_files()
@@ -459,7 +463,9 @@ def _esegui_appunti_impl(
             selected_book_pages,
             book_mode,
         )
-        notes_meta.update(title=title or "", course=course or "")
+        notes_meta.update(
+            title=title or "", course=course or "", lesson_date=lesson_date or ""
+        )
         _apply_notes_metadata(session, notes_meta)
         session_ctx.save()
 
@@ -640,6 +646,7 @@ def esegui_appunti(
     book_mode=None,
     title=None,
     course=None,
+    lesson_date=None,
 ):
     """Public entry point, mirrors esegui_sbobinatura.
 
@@ -658,4 +665,5 @@ def esegui_appunti(
         book_mode=book_mode,
         title=title,
         course=course,
+        lesson_date=lesson_date,
     )

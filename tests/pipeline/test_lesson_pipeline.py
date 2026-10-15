@@ -110,7 +110,7 @@ class LessonPipelineTests(unittest.TestCase):
         client.models.generate_content.side_effect = generate
         return client
 
-    def _run(self, lesson: LessonSources, client) -> dict:
+    def _run(self, lesson: LessonSources, client, resume: bool = False) -> dict:
         with patch("google.genai.Client", return_value=client):
             esegui_sbobinatura(
                 input_path=self.audio,
@@ -118,6 +118,7 @@ class LessonPipelineTests(unittest.TestCase):
                 app_instance=self.adapter,
                 session_dir_hint=self.session_dir,
                 lesson=lesson,
+                resume_session=resume,
             )
         with open(
             os.path.join(self.session_dir, "session.json"), encoding="utf-8"
@@ -196,6 +197,44 @@ class LessonPipelineTests(unittest.TestCase):
             )
         self.assertEqual(self.adapter.last_run_status, "failed")
         self.assertEqual(self.calls, [])
+
+    def test_two_audio_parts_become_one_lesson(self):
+        second = _generate_synthetic_wav(
+            os.path.join(self.tmp, "lezione_parte2.wav"), duration_sec=2.0
+        )
+        session = self._run(
+            LessonSources(audio_parts=[second], course="Analisi 2"), self._client()
+        )
+        self.assertEqual(self.adapter.last_run_status, "completed")
+        merged = session["input"]["path"]
+        self.assertTrue(merged.endswith("audio_unito.mp3"))
+        from jot.services.audio_service import probe_media_duration
+
+        duration, _reason = probe_media_duration(merged)
+        assert duration is not None
+        self.assertGreater(duration, 3.5)
+        self.assertEqual(session["lesson"]["audio_parts"], [second])
+
+    def test_starting_over_a_two_audio_lesson_rebuilds_the_merged_audio(self):
+        second = _generate_synthetic_wav(
+            os.path.join(self.tmp, "lezione_parte2.wav"), duration_sec=2.0
+        )
+        lesson = LessonSources(audio_parts=[second], title="Politecnico")
+        self._run(lesson, self._client())
+        self.adapter.ask_regenerate = (
+            lambda filename, callback, mode="resume", session_dir="": callback(
+                {"regenerate": True}
+            )
+        )
+        # what the app does: resume, then "Rigenera" in the dialog
+        session = self._run(lesson, self._client(), resume=True)
+        self.assertEqual(self.adapter.last_run_status, "completed")
+        self.assertTrue(session["input"]["path"].endswith("audio_unito.mp3"))
+        self.assertTrue(os.path.isfile(session["input"]["path"]))
+        self.assertEqual(session["lesson"]["audio_parts"], [second])
+        self.assertEqual(session["title"], "Politecnico")
+        # really started over: the cached sintesi was wiped and written again
+        self.assertEqual(len(self.summary_calls), 2)
 
 
 if __name__ == "__main__":

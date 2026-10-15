@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1 — 2026-10-15
+
+Tornano le lezioni con due audio, con «Rigenera» corretto. Dettagli in [docs/releases/v1.4.1.md](docs/releases/v1.4.1.md).
+
 ## 1.4.0 — 2026-10-15
 
 Ritorno alla base della 1.0.0, che funzionava meglio, più sintesi automatica e formule leggibili. Dettagli in [docs/releases/v1.4.0.md](docs/releases/v1.4.0.md).
